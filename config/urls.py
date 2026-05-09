@@ -16,10 +16,14 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+
+    # App principal
+    path("", include("nutricion.urls")),
 ]
 
 # Personalización de los textos visibles en el panel de administración de Django
