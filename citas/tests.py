@@ -77,6 +77,7 @@ class CitaModelTestCase(TestCase):
             duracion_minutos=45,
             tipo=TipoCita.EVALUACION,
             estado=EstadoCita.PROGRAMADA,
+            motivo="Consulta de rutina",
         )
         self.assertIsNotNone(cita.pk)
         self.assertEqual(cita.paciente, self.paciente_activo_a)
@@ -87,6 +88,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_inactivo_a,
             fecha_hora=self.fecha_base,
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
         # Debe lanzar una ValidationError
         with self.assertRaises(ValidationError) as context:
@@ -102,6 +104,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita,
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
 
         # Intento 1: Solapamiento exacto (10:00 - 10:45)
@@ -109,6 +112,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita,
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
         with self.assertRaises(ValidationError):
             cita_solapada_1.save()
@@ -118,6 +122,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita - timedelta(minutes=15),
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
         with self.assertRaises(ValidationError):
             cita_solapada_2.save()
@@ -127,6 +132,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita + timedelta(minutes=15),
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
         with self.assertRaises(ValidationError):
             cita_solapada_3.save()
@@ -136,6 +142,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita + timedelta(minutes=10),
             duracion_minutos=20,
+            motivo="Consulta de rutina",
         )
         with self.assertRaises(ValidationError):
             cita_solapada_4.save()
@@ -148,6 +155,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita_1,
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
 
         # Cita 2: 10:45 - 11:30 (Consecutiva exacta)
@@ -155,6 +163,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita_1 + timedelta(minutes=45),
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
         # No debe lanzar error
         try:
@@ -170,6 +179,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita,
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
 
         # Nutricionista B programa cita de 10:00 a 10:45 para su propio paciente
@@ -177,6 +187,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_b,
             fecha_hora=hora_cita,
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
         
         # No debe lanzar error
@@ -193,6 +204,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita,
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
         cita_cancelada.estado = EstadoCita.CANCELADA
         cita_cancelada.save()
@@ -202,6 +214,7 @@ class CitaModelTestCase(TestCase):
             paciente=self.paciente_activo_a,
             fecha_hora=hora_cita,
             duracion_minutos=45,
+            motivo="Consulta de rutina",
         )
         
         # No debe lanzar error

@@ -28,6 +28,7 @@ class CitaForm(forms.ModelForm):
         ]
         widgets = {
             "fecha_hora": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
                 attrs={
                     "type": "datetime-local",
                     "placeholder": "Selecciona fecha y hora",

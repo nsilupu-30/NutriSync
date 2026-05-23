@@ -3,12 +3,12 @@
 # Incluye validaciones atómicas de solapamiento y de estado del paciente.
 
 from django.db import models
-from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
 from config.choices import TipoCita, EstadoCita
 from pacientes.models import Paciente
+from citas.validators import validate_duracion_minutos, validate_costo_positivo
 
 
 class Cita(models.Model):
@@ -29,6 +29,7 @@ class Cita(models.Model):
     )
     duracion_minutos = models.PositiveIntegerField(
         default=45,
+        validators=[validate_duracion_minutos],
         verbose_name="Duración (minutos)",
         help_text="Duración estimada de la consulta en minutos",
     )
@@ -45,7 +46,6 @@ class Cita(models.Model):
         verbose_name="Estado",
     )
     motivo = models.TextField(
-        blank=True,
         verbose_name="Motivo de la consulta",
         help_text="Breve descripción del motivo de la cita",
     )
@@ -57,8 +57,8 @@ class Cita(models.Model):
     costo = models.DecimalField(
         max_digits=8,
         decimal_places=2,
-        null=True,
-        blank=True,
+        default=0.00,
+        validators=[validate_costo_positivo],
         verbose_name="Costo de la consulta",
     )
     fecha_creacion = models.DateTimeField(
@@ -76,7 +76,9 @@ class Cita(models.Model):
         ]
 
     def __str__(self):
-        return f"Cita con {self.paciente} - {self.fecha_hora.strftime('%d/%m/%Y %H:%M')}"
+        return (
+            f"Cita con {self.paciente} - {self.fecha_hora.strftime('%d/%m/%Y %H:%M')}"
+        )
 
     # ─── Properties de Estado ────────────────────────────────────────────────
     @property
@@ -110,7 +112,9 @@ class Cita(models.Model):
         # 1. Validar que el paciente esté activo
         if self.paciente_id:
             # Recargamos de la BD para asegurar que no se use caché obsoleto
-            paciente = Paciente.objects.only("estado", "nombre", "apellido").get(pk=self.paciente_id)
+            paciente = Paciente.objects.only("estado", "nombre", "apellido").get(
+                pk=self.paciente_id
+            )
             if not paciente.esta_activo:
                 errors["paciente"] = ValidationError(
                     "No se pueden programar citas para un paciente inactivo."
@@ -146,10 +150,14 @@ class Cita(models.Model):
             fecha_dia = self.fecha_hora.date()
 
             # Obtenemos todas las citas activas de este nutricionista en el mismo día
-            citas_dia = Cita.objects.filter(
-                paciente__nutricionista=nutricionista,
-                fecha_hora__date=fecha_dia,
-            ).exclude(estado=EstadoCita.CANCELADA).select_related("paciente")
+            citas_dia = (
+                Cita.objects.filter(
+                    paciente__nutricionista=nutricionista,
+                    fecha_hora__date=fecha_dia,
+                )
+                .exclude(estado=EstadoCita.CANCELADA)
+                .select_related("paciente")
+            )
 
             # Excluimos la cita actual en caso de edición
             if self.pk:
@@ -176,4 +184,3 @@ class Cita(models.Model):
         # forzamos full_clean() antes de guardar para asegurar la integridad de datos
         self.full_clean()
         super().save(*args, **kwargs)
-
