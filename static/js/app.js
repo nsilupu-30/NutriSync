@@ -75,6 +75,15 @@ function setModalContent(htmlOrElement) {
         content.appendChild(document.importNode(htmlOrElement, true));
     }
 
+    // Ejecutar scripts insertados dinámicamente para que corran los cálculos en tiempo real
+    const scripts = content.querySelectorAll('script');
+    scripts.forEach(oldScript => {
+        const newScript = document.createElement('script');
+        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
+
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
@@ -164,8 +173,18 @@ function bindFormSubmit() {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
 
+                const successDiv = doc.getElementById('paciente-form-success');
                 const formContent = doc.getElementById('paciente-form-content');
-                if (formContent) {
+
+                if (successDiv) {
+                    const pk = successDiv.getAttribute('data-pk');
+                    closeModal();
+                    if (pk) {
+                        window.location.href = `/pacientes/${pk}/`;
+                    } else {
+                        refreshListaPacientes();
+                    }
+                } else if (formContent) {
                     setModalContent(formContent);
                     bindFormSubmit();
                 } else {
@@ -186,27 +205,6 @@ function bindFormSubmit() {
     });
 }
 
-// ─── Carga de detalle ───────────────────────────────────────────────────────
-
-async function openModalDetalle(pk) {
-    openModal('Ficha de Paciente');
-    try {
-        const resp = await fetch(`/pacientes/${pk}/?fragment=1`);
-        const html = await resp.text();
-
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const detailContent = doc.getElementById('paciente-detail-content');
-
-        if (detailContent) {
-            setModalContent(detailContent);
-        } else {
-            _showError('Error al cargar los datos del paciente.');
-        }
-    } catch (err) {
-        _showError('Error de conexión.');
-    }
-}
 
 // ─── Toggle estado (desde modal o desde lista) ──────────────────────────────
 
@@ -223,11 +221,11 @@ async function toggleEstado(pk) {
         });
 
         if (resp.ok || resp.redirected) {
-            const overlay = document.getElementById('modal-overlay');
-            if (!overlay.classList.contains('hidden')) {
-                await openModalDetalle(pk);
+            if (document.getElementById('paciente-detail-content')) {
+                window.location.reload();
+            } else {
+                refreshListaPacientes();
             }
-            refreshListaPacientes();
         }
     } catch (err) {
         console.error('Error al cambiar estado:', err);
