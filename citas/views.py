@@ -509,7 +509,7 @@ def cita_detalle_json(request, pk):
             "paciente_nombre": paciente.nombre_completo,
             "paciente_edad": f"{edad} años" if edad else "—",
             "paciente_telefono": paciente.telefono or "—",
-            "paciente_objetivo": paciente.informacion_clinica.get("objetivo_principal") or paciente.motivo or "—",
+            "paciente_objetivo": paciente.informacion_clinica.get("objetivo_principal") or cita.motivo or "—",
             "ultimo_peso": ultimo_peso,
             "imc_actual": imc_actual,
             "ultima_consulta": ultima_consulta,
