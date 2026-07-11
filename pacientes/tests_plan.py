@@ -98,9 +98,7 @@ class PlanAlimentarioTestCase(TestCase):
                 "section": "comidas",
                 "comida_tipo": ["Desayuno", "Cena"],
                 "comida_hora": ["08:00", "21:00"],
-                "comida_alimentos": ["Huevos", "Pollo con ensalada"],
-                "comida_cantidad": ["3", "200"],
-                "comida_unidad": ["unidad", "g"],
+                "comida_receta_id": ["1", "2"],
                 "comida_observaciones": ["Sin yema", "Pechuga"]
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest"
@@ -109,7 +107,7 @@ class PlanAlimentarioTestCase(TestCase):
         plan.refresh_from_db()
         self.assertEqual(len(plan.comidas), 2)
         self.assertEqual(plan.comidas[0]["tipo"], "Desayuno")
-        self.assertEqual(plan.comidas[1]["alimentos"], "Pollo con ensalada")
+        self.assertEqual(plan.comidas[1]["receta_id"], "2")
 
     def test_plan_nueva_version(self):
         """Verify creating a new version copies plan and keeps older version in history."""

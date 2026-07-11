@@ -1136,11 +1136,31 @@ def paciente_plan_get(request, pk):
             "fecha_creacion": p.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
         })
 
+    # 4. Get available recipes for meals
+    from django.db.models import Q
+    from nutricion.models import Receta
+    recetas_qs = Receta.objects.filter(
+        Q(creado_por=request.user) | Q(es_sistema=True) | Q(paciente=paciente)
+    ).distinct()
+    
+    recetas_list = []
+    for r in recetas_qs:
+        recetas_list.append({
+            "id": r.id,
+            "nombre": r.nombre,
+            "calorias": r.calorias_por_porcion,
+            "proteinas": r.proteinas_por_porcion,
+            "carbohidratos": r.carbohidratos_por_porcion,
+            "grasas": r.grasas_por_porcion,
+            "porciones": r.porciones
+        })
+
     return JsonResponse({
         "success": True,
         "plan": plan_data,
         "referencia": referencia,
-        "historial": historial
+        "historial": historial,
+        "recetas": recetas_list
     })
 
 @login_required
@@ -1192,9 +1212,7 @@ def paciente_plan_guardar(request, pk):
         comidas_list = []
         tipos = request.POST.getlist("comida_tipo")
         horas = request.POST.getlist("comida_hora")
-        alimentos = request.POST.getlist("comida_alimentos")
-        cantidades = request.POST.getlist("comida_cantidad")
-        unidades = request.POST.getlist("comida_unidad")
+        recetas_ids = request.POST.getlist("comida_receta_id")
         observaciones = request.POST.getlist("comida_observaciones")
         
         for i in range(len(tipos)):
@@ -1202,9 +1220,7 @@ def paciente_plan_guardar(request, pk):
                 comidas_list.append({
                     "tipo": tipos[i],
                     "hora": horas[i] if i < len(horas) else "",
-                    "alimentos": alimentos[i] if i < len(alimentos) else "",
-                    "cantidad": cantidades[i] if i < len(cantidades) else "",
-                    "unidad": unidades[i] if i < len(unidades) else "",
+                    "receta_id": recetas_ids[i] if i < len(recetas_ids) else "",
                     "observaciones": observaciones[i] if i < len(observaciones) else "",
                 })
         plan.comidas = comidas_list

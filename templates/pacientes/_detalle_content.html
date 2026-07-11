@@ -1365,12 +1365,24 @@
                                         <strong class="text-slate-700" id="card-plan-resumen-agua">—</strong>
                                     </div>
                                     <div class="flex justify-between">
+                                        <span class="text-slate-400">Total de comidas:</span>
+                                        <strong class="text-slate-700" id="card-plan-resumen-total-comidas">—</strong>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Profesional responsable:</span>
+                                        <strong class="text-slate-700 truncate max-w-[150px]" id="card-plan-resumen-profesional">—</strong>
+                                    </div>
+                                    <div class="flex justify-between">
                                         <span class="text-slate-400">Estado:</span>
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold" id="card-plan-estado-badge">—</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-400">Fecha de Inicio:</span>
                                         <strong class="text-slate-700" id="card-plan-fecha-inicio">—</strong>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Última actualización:</span>
+                                        <strong class="text-slate-700" id="card-plan-fecha-actualizacion">—</strong>
                                     </div>
                                 </div>
                             </div>
@@ -5658,6 +5670,8 @@
 
     // ─── JS PARA EL MÓDULO DE PLAN ALIMENTARIO ───
     let activePlan = null;
+    let catalogRecetas = [];
+    let activeReferencia = null;
 
     function loadPlanAlimentario(planId = null) {
         let url = "{% url 'pacientes:plan_get' paciente.pk %}";
@@ -5680,9 +5694,11 @@
                 alert("Error al cargar plan alimentario.");
                 return;
             }
+            catalogRecetas = data.recetas || [];
 
             // 1. Populate clinical reference values
             const ref = data.referencia;
+            activeReferencia = ref;
             document.getElementById("ref-objetivo").innerText = ref.objetivo_principal || "No especificado";
             document.getElementById("ref-diagnostico").innerText = ref.diagnostico_principal || "No registrado";
             document.getElementById("ref-peso-actual").innerText = ref.peso_actual ? `${ref.peso_actual} kg` : "—";
@@ -5757,6 +5773,9 @@
                     }
                 }
                 document.getElementById("card-plan-fecha-inicio").innerText = plan.fecha_inicio;
+                document.getElementById("card-plan-resumen-total-comidas").innerText = plan.comidas ? plan.comidas.length : 0;
+                document.getElementById("card-plan-resumen-profesional").innerText = plan.profesional || "Nutricionista";
+                document.getElementById("card-plan-fecha-actualizacion").innerText = plan.fecha_creacion || "—";
 
                 // Card 2: Prescripción
                 document.getElementById("card-plan-tipo").innerText = plan.tipo_plan || "Estándar";
@@ -5794,17 +5813,21 @@
                 comidasContainer.innerHTML = "";
                 if (plan.comidas && plan.comidas.length > 0) {
                     plan.comidas.forEach(c => {
+                        const receta = catalogRecetas.find(r => r.id.toString() === c.receta_id?.toString());
+                        const recetaNombre = receta ? receta.nombre : "Receta eliminada o no disponible";
+                        const macrosText = receta ? `${receta.calorias} kcal | P: ${receta.proteinas}g | C: ${receta.carbohidratos}g | G: ${receta.grasas}g` : "";
+                        
                         const item = document.createElement("div");
                         item.className = "flex justify-between items-start border-b border-slate-100 pb-1.5 last:border-b-0";
                         item.innerHTML = `
-                            <div>
+                            <div class="flex-1">
                                 <span class="font-extrabold text-teal-700 uppercase tracking-wider block text-[10px]">${c.tipo}</span>
-                                <span class="text-slate-700 font-semibold block">${c.alimentos}</span>
-                                ${c.observaciones ? `<span class="text-[10px] text-slate-400 italic block mt-0.5">Obs: ${c.observaciones}</span>` : ''}
+                                <span class="text-slate-700 font-semibold block">${recetaNombre}</span>
+                                <span class="text-[9px] text-slate-500 font-medium">${macrosText}</span>
+                                ${c.observaciones ? `<span class="text-[10px] text-slate-400 italic block mt-1">Obs: ${c.observaciones}</span>` : ''}
                             </div>
                             <div class="text-right flex-shrink-0 ml-4">
-                                <span class="font-bold text-slate-800 block">${c.cantidad} ${c.unidad}</span>
-                                ${c.hora ? `<span class="text-[10px] text-slate-400 block">${c.hora}</span>` : ''}
+                                ${c.hora ? `<span class="font-bold text-slate-800 block">${c.hora}</span>` : ''}
                             </div>
                         `;
                         comidasContainer.appendChild(item);
@@ -5952,6 +5975,11 @@
     }
 
     function openPlanModal(modalId) {
+        if (!activeReferencia || !activeReferencia.objetivo_principal || activeReferencia.objetivo_principal === "No especificado") {
+            alert("⚠️ No puedes crear o editar el Plan Alimentario porque aún no has registrado una Evaluación con Objetivo Nutricional para este paciente.\n\nPor favor, completa primero el módulo de Evaluación.");
+            return;
+        }
+        
         const modal = document.getElementById(modalId);
         if (!modal) return;
         modal.classList.remove("hidden");
@@ -5963,7 +5991,7 @@
             container.innerHTML = "";
             if (activePlan && activePlan.comidas && activePlan.comidas.length > 0) {
                 activePlan.comidas.forEach(c => {
-                    agregarComidaRow(c.tipo, c.hora, c.alimentos, c.cantidad, c.unidad, c.observaciones);
+                    agregarComidaRow(c.tipo, c.hora, c.receta_id, c.observaciones);
                 });
             } else {
                 // Prepopulate standard meals if empty
@@ -5975,7 +6003,7 @@
                     { tipo: "Cena", hora: "21:00" }
                 ];
                 defaultMeals.forEach(c => {
-                    agregarComidaRow(c.tipo, c.hora, "", "", "g", "");
+                    agregarComidaRow(c.tipo, c.hora, "", "");
                 });
             }
         } else if (modalId === "modal-plan-sustituciones") {
@@ -6050,11 +6078,18 @@
         }
     }
 
-    function agregarComidaRow(tipo = "", hora = "", alimentos = "", cantidad = "", unidad = "g", observaciones = "") {
+    function agregarComidaRow(tipo = "", hora = "", receta_id = "", observaciones = "") {
         const container = document.getElementById("modal-comidas-list-container");
         if (!container) return;
         const div = document.createElement("div");
         div.className = "grid grid-cols-12 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl relative group mb-3 text-xs";
+        
+        let optionsHtml = '<option value="">-- Seleccionar Receta --</option>';
+        catalogRecetas.forEach(r => {
+            const selected = (r.id.toString() === receta_id?.toString()) ? "selected" : "";
+            optionsHtml += `<option value="${r.id}" ${selected}>${r.nombre} (${r.calorias} kcal)</option>`;
+        });
+
         div.innerHTML = `
             <div class="col-span-3">
                 <label class="block font-bold text-slate-500 mb-0.5">Comida / Tiempo</label>
@@ -6065,22 +6100,16 @@
                 <input type="time" name="comida_hora" value="${hora}" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white">
             </div>
             <div class="col-span-7">
-                <label class="block font-bold text-slate-500 mb-0.5">Alimentos / Porciones</label>
-                <input type="text" name="comida_alimentos" value="${alimentos}" placeholder="Ej. 2 huevos revueltos, 1 taza de avena" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white" required>
+                <label class="block font-bold text-slate-500 mb-0.5">Receta Seleccionada</label>
+                <select name="comida_receta_id" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white font-semibold text-slate-700" required>
+                    ${optionsHtml}
+                </select>
             </div>
-            <div class="col-span-3 mt-2">
-                <label class="block font-bold text-slate-500 mb-0.5">Cantidad</label>
-                <input type="text" name="comida_cantidad" value="${cantidad}" placeholder="Ej. 150" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white">
-            </div>
-            <div class="col-span-2 mt-2">
-                <label class="block font-bold text-slate-500 mb-0.5">Unidad</label>
-                <input type="text" name="comida_unidad" value="${unidad}" placeholder="Ej. g, tz, pza" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white">
-            </div>
-            <div class="col-span-6 mt-2">
+            <div class="col-span-11 mt-2">
                 <label class="block font-bold text-slate-500 mb-0.5">Observaciones</label>
-                <input type="text" name="comida_observaciones" value="${observaciones}" placeholder="Ej. Sin azúcar" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white">
+                <input type="text" name="comida_observaciones" value="${observaciones}" placeholder="Ej. Acompañar con abundante agua" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white">
             </div>
-            <div class="col-span-1 flex items-end justify-center pb-1">
+            <div class="col-span-1 mt-2 flex items-end justify-center pb-1">
                 <button type="button" onclick="this.closest('div.grid').remove()" class="text-rose-500 hover:text-rose-700 p-1">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>

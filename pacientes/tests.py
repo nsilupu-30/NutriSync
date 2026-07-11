@@ -504,7 +504,7 @@ class MedidaCorporalSyncTestCase(TestCase):
             paciente=self.paciente,
             fecha=date.today(),
             titulo="Control Rutinario",
-            contenido="Paciente muestra progresos excelentes.",
+            observaciones_clinicas="Paciente muestra progresos excelentes.",
             tipo="consulta",
         )
 
