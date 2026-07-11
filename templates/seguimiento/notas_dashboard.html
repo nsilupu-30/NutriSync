@@ -66,7 +66,7 @@
                             {{ nota.paciente.nombre_completo }}
                         </a>
                     </div>
-                    <p class="text-sm text-slate-600 mt-1 line-clamp-2">{{ nota.contenido|truncatewords:40 }}</p>
+                    <p class="text-sm text-slate-600 mt-1 line-clamp-2">{{ nota.motivo_consulta|default:nota.observaciones_clinicas|truncatewords:40 }}</p>
                 </div>
                 <a href="{% url 'seguimiento:notas_detalle' nota.pk %}"
                    class="flex-shrink-0 text-slate-400 hover:text-teal-600 transition-colors p-1">
