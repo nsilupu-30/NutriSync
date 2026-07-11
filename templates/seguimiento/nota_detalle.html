@@ -45,9 +45,52 @@
 
         <hr class="border-slate-100 mb-6">
 
-        <!-- Contenido -->
-        <div class="prose prose-sm max-w-none text-slate-700 whitespace-pre-line">
-            {{ nota.contenido }}
+        <!-- Contenido Diario Clínico -->
+        <div class="space-y-6">
+            {% if nota.motivo_consulta %}
+            <div>
+                <h4 class="text-sm font-semibold text-slate-800 mb-2">Motivo de consulta</h4>
+                <div class="prose prose-sm max-w-none text-slate-700 whitespace-pre-line bg-slate-50 p-4 rounded-lg border border-slate-100">
+                    {{ nota.motivo_consulta }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if nota.resumen_consulta %}
+            <div>
+                <h4 class="text-sm font-semibold text-slate-800 mb-2">Resumen de la consulta</h4>
+                <div class="prose prose-sm max-w-none text-slate-700 whitespace-pre-line bg-slate-50 p-4 rounded-lg border border-slate-100">
+                    {{ nota.resumen_consulta }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if nota.objetivos_acordados %}
+            <div>
+                <h4 class="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i> Objetivos acordados</h4>
+                <div class="prose prose-sm max-w-none text-slate-700 whitespace-pre-line bg-emerald-50/50 p-4 rounded-lg border border-emerald-100">
+                    {{ nota.objetivos_acordados }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if nota.plan_accion %}
+            <div>
+                <h4 class="text-sm font-semibold text-slate-800 mb-2">Plan de acción / Acuerdos</h4>
+                <div class="prose prose-sm max-w-none text-slate-700 whitespace-pre-line bg-slate-50 p-4 rounded-lg border border-slate-100">
+                    {{ nota.plan_accion }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if nota.observaciones_clinicas %}
+            <div>
+                <h4 class="text-sm font-semibold text-slate-800 mb-2">Observaciones clínicas</h4>
+                <div class="prose prose-sm max-w-none text-slate-700 whitespace-pre-line bg-slate-50 p-4 rounded-lg border border-slate-100">
+                    {{ nota.observaciones_clinicas }}
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Cita relacionada -->
