@@ -1,18 +1,51 @@
 # pacientes/forms.py
 # Formulario para crear y editar pacientes con validaciones de negocio.
-# Usa widgets Tailwind para mantener la consistencia visual del sistema.
+# Optimizado para un registro rápido de menos de 2 minutos.
 
+import random
 from django import forms
 from config.choices import Sexo
 from .models import Paciente
 
 
 class PacienteForm(forms.ModelForm):
-    """Formulario para crear/editar la ficha de un paciente."""
+    """Formulario para el registro rápido y simplificado de pacientes."""
+
+    motivo_consulta = forms.ChoiceField(
+        choices=[
+            ("Pérdida de peso", "Pérdida de peso"),
+            ("Aumento de masa muscular", "Aumento de masa muscular"),
+            ("Nutrición deportiva", "Nutrición deportiva"),
+            ("Embarazo", "Embarazo"),
+            ("Control clínico", "Control clínico"),
+            ("Diabetes", "Diabetes"),
+            ("Mejora de hábitos", "Mejora de hábitos"),
+            ("Otro", "Otro"),
+        ],
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 bg-white",
+            }
+        ),
+        label="Motivo de Consulta",
+    )
+
+    observaciones_iniciales = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                "rows": 2,
+                "placeholder": "Paciente desea perder 8 kg y mejorar hábitos alimenticios...",
+            }
+        ),
+        label="Observaciones Iniciales",
+    )
 
     class Meta:
         model = Paciente
-        # Excluimos nutricionista (se asigna en la vista) y fechas automáticas
+        # Incluye únicamente campos requeridos y opcionales permitidos para el registro rápido
         fields = [
             "nombre",
             "apellido",
@@ -21,149 +54,125 @@ class PacienteForm(forms.ModelForm):
             "sexo",
             "peso",
             "talla",
-            "ocupacion",
             "telefono",
             "email",
             "direccion",
-            "condiciones_medicas",
-            "alergias",
-            "notas_generales",
         ]
+        error_messages = {
+            "sexo": {
+                "required": "Debe seleccionar un género (Masculino o Femenino).",
+            }
+        }
         widgets = {
             "nombre": forms.TextInput(
                 attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
                     "placeholder": "Nombre del paciente",
                 }
             ),
             "apellido": forms.TextInput(
                 attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
                     "placeholder": "Apellido del paciente",
                 }
             ),
             "dni": forms.TextInput(
                 attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
-                    "placeholder": "DNI del paciente (8 dígitos)",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "placeholder": "DNI (Opcional - 8 dígitos)",
                     "maxlength": "8",
                 }
             ),
             "fecha_nacimiento": forms.DateInput(
                 attrs={
                     "type": "date",
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "id": "id_fecha_nacimiento",
                 },
                 format="%Y-%m-%d",
             ),
             "sexo": forms.Select(
                 attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 bg-white",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800 bg-white",
                 }
             ),
             "peso": forms.NumberInput(
                 attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
                     "placeholder": "Ej: 70.5",
                     "step": "0.1",
+                    "id": "id_peso",
                 }
             ),
             "talla": forms.NumberInput(
                 attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
                     "placeholder": "Ej: 165.0",
                     "step": "0.1",
-                }
-            ),
-            "ocupacion": forms.TextInput(
-                attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
-                    "placeholder": "Ej: Ingeniero, Estudiante, Ama de casa",
+                    "id": "id_talla",
                 }
             ),
             "telefono": forms.TextInput(
                 attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
                     "placeholder": "Ej: 999000000",
                 }
             ),
             "email": forms.EmailInput(
                 attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
-                    "placeholder": "correo@ejemplo.com",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "placeholder": "correo@ejemplo.com (Opcional)",
                 }
             ),
-            "direccion": forms.Textarea(
+            "direccion": forms.TextInput(
                 attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
-                    "rows": 2,
-                    "placeholder": "Dirección del domicilio",
+                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
+                    "placeholder": "Dirección del domicilio (Opcional)",
                 }
             ),
-            "condiciones_medicas": forms.Textarea(
-                attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
-                    "rows": 3,
-                    "placeholder": "Condiciones médicas relevantes del paciente",
-                }
-            ),
-            "alergias": forms.Textarea(
-                attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
-                    "rows": 3,
-                    "placeholder": "Alergias conocidas (alimentos, medicamentos, etc.)",
-                }
-            ),
-            "notas_generales": forms.Textarea(
-                attrs={
-                    "class": "w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-800",
-                    "rows": 3,
-                    "placeholder": "Observaciones generales relevantes para el nutricionista",
-                }
-            ),
-        }
-        error_messages = {
-            "sexo": {
-                "required": "Debe seleccionar un género (Masculino o Femenino).",
-                "invalid_choice": "Seleccione una opción válida (Masculino o Femenino).",
-            }
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Reemplazar la opción por defecto --------- por una indicación clara
-        self.fields["sexo"].choices = [("", "Seleccione género...")] + Sexo.CHOICES
-        # Hacer obligatoria la talla en el formulario web
-        if "talla" in self.fields:
-            self.fields["talla"].required = True
+        self.fields["sexo"].choices = [("", "Seleccione sexo biológico...")] + Sexo.CHOICES
+        self.fields["talla"].required = True
+        self.fields["dni"].required = False  # DNI es opcional en la interfaz
+
+        # Cargar valores guardados en notas_generales al editar
+        if self.instance and self.instance.pk:
+            notas = self.instance.notas_generales or ""
+            if "Motivo de Consulta:" in notas:
+                parts = notas.split("Motivo de Consulta:")
+                if len(parts) > 1:
+                    subparts = parts[1].split("\nObservaciones Iniciales:\n")
+                    motivo = subparts[0].strip()
+                    observaciones = subparts[1].strip() if len(subparts) > 1 else ""
+                    self.initial["motivo_consulta"] = motivo
+                    self.initial["observaciones_iniciales"] = observaciones
 
     def clean_talla(self):
-        """Si el usuario ingresa la talla en metros (ej: 1.80), la convertimos a centímetros (180)."""
+        """Convierte talla en metros a centímetros si es necesario."""
         talla = self.cleaned_data.get("talla")
         if talla is not None:
-            # Si se encuentra en un rango de metros razonable (0.5 a 2.5), multiplicar por 100
             if 0.5 <= talla <= 2.5:
                 talla = talla * 100
         return talla
 
     def clean_nombre(self):
-        """Normaliza el nombre: primera letra mayúscula, sin espacios extra."""
-        nombre = self.cleaned_data.get("nombre", "")
-        return nombre.strip().title()
+        return self.cleaned_data.get("nombre", "").strip().title()
 
     def clean_apellido(self):
-        """Normaliza el apellido: primera letra mayúscula, sin espacios extra."""
-        apellido = self.cleaned_data.get("apellido", "")
-        return apellido.strip().title()
+        return self.cleaned_data.get("apellido", "").strip().title()
 
     def clean_dni(self):
-        """Normaliza el DNI quitando espacios en blanco."""
+        """Hace opcional el DNI autogenerando uno único si se deja vacío."""
         dni = self.cleaned_data.get("dni", "")
-        return dni.strip() if dni else ""
-
-    # Nota: clean_telefono y clean_fecha_nacimiento fueron eliminados porque Django ejecuta
-    # automáticamente los validadores del modelo (validate_telefono y validate_fecha_nacimiento_edad)
-    # durante la validación del formulario.
+        if not dni:
+            while True:
+                mock_dni = "".join(random.choices("0123456789", k=8))
+                if not Paciente.objects.filter(dni=mock_dni).exists():
+                    return mock_dni
+        return dni.strip()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -172,44 +181,46 @@ class PacienteForm(forms.ModelForm):
         dni = cleaned_data.get("dni")
         email = cleaned_data.get("email")
 
-        # 1. Validación cruzada: Nombre y Apellido no pueden ser idénticos
-        if nombre and apellido and nombre.strip().lower() == apellido.strip().lower():
+        if nombre and apellido and nombre.lower() == apellido.lower():
             raise forms.ValidationError(
                 "El nombre y el apellido del paciente no pueden ser idénticos."
             )
 
-        # 2. Validación de unicidad de DNI y Email por Nutricionista (multi-tenant)
+        # Validación multi-tenant de unicidad
         nutricionista = getattr(self.instance, "nutricionista", None)
         if not nutricionista:
             try:
                 from core.middleware import get_current_user
-
                 nutricionista = get_current_user()
             except ImportError:
                 pass
 
         if nutricionista:
-            # Unicidad de DNI por nutricionista
             if dni:
                 qs_dni = Paciente.objects.filter(nutricionista=nutricionista, dni=dni)
                 if self.instance.pk:
                     qs_dni = qs_dni.exclude(pk=self.instance.pk)
                 if qs_dni.exists():
-                    self.add_error(
-                        "dni", "Ya tienes registrado un paciente con este DNI."
-                    )
+                    self.add_error("dni", "Ya tienes registrado un paciente con este DNI.")
 
-            # Unicidad de Email por nutricionista (si se provee)
             if email:
-                qs_email = Paciente.objects.filter(
-                    nutricionista=nutricionista, email=email
-                )
+                qs_email = Paciente.objects.filter(nutricionista=nutricionista, email=email)
                 if self.instance.pk:
                     qs_email = qs_email.exclude(pk=self.instance.pk)
                 if qs_email.exists():
-                    self.add_error(
-                        "email",
-                        "Ya tienes registrado un paciente con este correo electrónico.",
-                    )
+                    self.add_error("email", "Ya tienes registrado un paciente con este correo electrónico.")
 
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        motivo = self.cleaned_data.get("motivo_consulta")
+        observaciones = self.cleaned_data.get("observaciones_iniciales")
+
+        # Serializamos el motivo y las observaciones en notas_generales
+        instance.notas_generales = f"Motivo de Consulta: {motivo}\nObservaciones Iniciales:\n{observaciones}"
+
+        if commit:
+            instance.save()
+        return instance
+

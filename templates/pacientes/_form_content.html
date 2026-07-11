@@ -1,14 +1,12 @@
 <!-- pacientes/_form_content.html -->
-<!-- Fragmento del formulario de paciente (crear/editar).
-     Se incluye desde form.html para página completa y se extrae vía JS para modales. -->
+<!-- Fragmento del formulario de paciente (crear/editar) simplificado para registro rápido en menos de 2 minutos. -->
 
-<div id="paciente-form-content" class="max-w-4xl mx-auto">
-
-    <form method="post" action="{% if form.instance.pk %}{% url 'pacientes:editar' form.instance.pk %}{% else %}{% url 'pacientes:nuevo' %}{% endif %}" novalidate id="paciente-form" class="space-y-5">
+<div id="paciente-form-content" class="max-w-5xl mx-auto">
+    <form method="post" action="{% if form.instance.pk %}{% url 'pacientes:editar' form.instance.pk %}{% else %}{% url 'pacientes:nuevo' %}{% endif %}" novalidate id="paciente-form" class="space-y-6" enctype="multipart/form-data">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div class="p-4 text-sm text-red-800 rounded-xl bg-red-50 border border-red-200 flex flex-col gap-1" role="alert">
+        <div class="p-4 text-sm text-red-800 rounded-xl bg-red-50 border border-red-200 flex flex-col gap-1 shadow-sm" role="alert">
             <div class="flex items-center gap-2 font-semibold text-red-900">
                 <i data-lucide="alert-circle" class="w-4.5 h-4.5 text-red-600"></i>
                 Errores en el formulario
@@ -21,21 +19,24 @@
         </div>
         {% endif %}
 
-        <!-- Fila 1: Datos Personales (50%) + Contacto (50%) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Grid principal de 2 columnas en Desktop para baja carga cognitiva -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            <!-- Columna izquierda: Datos Personales -->
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                <div class="mb-4">
-                    <h2 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <!-- SECCIÓN 1: DATOS PERSONALES -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
                         <i data-lucide="user" class="w-4 h-4 text-teal-600"></i>
-                        Datos Personales
+                        1. Datos Personales
                     </h2>
+                    <span id="calc-age-badge" class="hidden px-2 py-0.5 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-150">
+                        <span id="calc-age-value">--</span>
+                    </span>
                 </div>
-                <div class="space-y-3">
+                
+                <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="{{ form.nombre.id_for_label }}"
-                               class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                        <label for="{{ form.nombre.id_for_label }}" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
                             Nombre <span class="text-red-500">*</span>
                         </label>
                         {{ form.nombre }}
@@ -44,8 +45,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label for="{{ form.apellido.id_for_label }}"
-                               class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                        <label for="{{ form.apellido.id_for_label }}" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
                             Apellido <span class="text-red-500">*</span>
                         </label>
                         {{ form.apellido }}
@@ -53,166 +53,306 @@
                         <p class="text-red-500 text-xs mt-1">{{ form.apellido.errors|join:", " }}</p>
                         {% endif %}
                     </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="{{ form.dni.id_for_label }}"
-                               class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                            DNI <span class="text-red-500">*</span>
+                        <label for="{{ form.sexo.id_for_label }}" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                            Sexo biológico <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.sexo }}
+                        {% if form.sexo.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.sexo.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="id_fecha_nacimiento" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                            Fecha de nacimiento <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.fecha_nacimiento }}
+                        {% if form.fecha_nacimiento.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.fecha_nacimiento.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 pt-1">
+                    <div>
+                        <label for="{{ form.dni.id_for_label }}" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                            DNI / Documento <span class="text-slate-400 font-normal">(Opcional)</span>
                         </label>
                         {{ form.dni }}
                         {% if form.dni.errors %}
                         <p class="text-red-500 text-xs mt-1">{{ form.dni.errors|join:", " }}</p>
                         {% endif %}
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label for="{{ form.fecha_nacimiento.id_for_label }}"
-                                   class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                Fecha Nac. <span class="text-red-500">*</span>
-                            </label>
-                            {{ form.fecha_nacimiento }}
-                            {% if form.fecha_nacimiento.errors %}
-                            <p class="text-red-500 text-xs mt-1">{{ form.fecha_nacimiento.errors|join:", " }}</p>
-                            {% endif %}
+                </div>
+
+                <!-- Carga de fotografía de paciente -->
+                <div class="pt-2">
+                    <div class="flex items-center gap-4 p-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                        <div class="relative w-12 h-12 rounded-full border border-slate-200 bg-white flex items-center justify-center overflow-hidden flex-shrink-0" id="photo-preview-container">
+                            <i data-lucide="camera" class="w-5 h-5 text-slate-400" id="photo-placeholder-icon"></i>
+                            <img id="photo-preview" class="w-full h-full object-cover hidden">
                         </div>
-                        <div>
-                            <label for="{{ form.sexo.id_for_label }}"
-                                   class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                Sexo <span class="text-red-500">*</span>
-                            </label>
-                            {{ form.sexo }}
-                            {% if form.sexo.errors %}
-                            <p class="text-red-500 text-xs mt-1">{{ form.sexo.errors|join:", " }}</p>
-                            {% endif %}
+                        <div class="flex-1">
+                            <span class="block text-xs font-semibold text-slate-600">Foto del Paciente</span>
+                            <span class="block text-[10px] text-slate-400 mb-1">Formatos JPG, PNG (Opcional)</span>
+                            <input type="file" id="fotografia" accept="image/*" class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer" onchange="previewPhoto(this)">
                         </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label for="{{ form.peso.id_for_label }}"
-                                   class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                Peso (kg) <span class="text-red-500">*</span>
-                            </label>
-                            {{ form.peso }}
-                            {% if form.peso.errors %}
-                            <p class="text-red-500 text-xs mt-1">{{ form.peso.errors|join:", " }}</p>
-                            {% endif %}
-                        </div>
-                        <div>
-                            <label for="{{ form.talla.id_for_label }}"
-                                   class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                Talla (cm) <span class="text-red-500">*</span>
-                            </label>
-                            {{ form.talla }}
-                            {% if form.talla.errors %}
-                            <p class="text-red-500 text-xs mt-1">{{ form.talla.errors|join:", " }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div>
-                        <label for="{{ form.ocupacion.id_for_label }}"
-                               class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                            Ocupación
-                        </label>
-                        {{ form.ocupacion }}
-                        {% if form.ocupacion.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.ocupacion.errors|join:", " }}</p>
-                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Columna derecha: Contacto -->
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                <div class="mb-4">
-                    <h2 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <!-- SECCIÓN 2: INFORMACIÓN DE CONTACTO -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
                         <i data-lucide="phone" class="w-4 h-4 text-teal-600"></i>
-                        Contacto
+                        2. Información de Contacto
                     </h2>
                 </div>
-                <div class="space-y-3">
+
+                <div>
+                    <label for="{{ form.telefono.id_for_label }}" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                        Teléfono <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.telefono }}
+                    {% if form.telefono.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.telefono.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                        Correo electrónico <span class="text-slate-400 font-normal">(Opcional)</span>
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.email.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.direccion.id_for_label }}" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                        Dirección <span class="text-slate-400 font-normal">(Opcional)</span>
+                    </label>
+                    {{ form.direccion }}
+                    {% if form.direccion.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.direccion.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- SECCIÓN 3: DATOS INICIALES & IMC CALCULATOR -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i data-lucide="scale" class="w-4 h-4 text-teal-600"></i>
+                        3. Datos Físicos Iniciales
+                    </h2>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="{{ form.telefono.id_for_label }}"
-                               class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                            Teléfono <span class="text-red-500">*</span>
+                        <label for="id_peso" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                            Peso Inicial (kg) <span class="text-red-500">*</span>
                         </label>
-                        {{ form.telefono }}
-                        {% if form.telefono.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.telefono.errors|join:", " }}</p>
+                        {{ form.peso }}
+                        {% if form.peso.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.peso.errors|join:", " }}</p>
                         {% endif %}
                     </div>
                     <div>
-                        <label for="{{ form.email.id_for_label }}"
-                               class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                            Email
+                        <label for="id_talla" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                            Talla (cm) <span class="text-red-500">*</span>
                         </label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.email.errors|join:", " }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label for="{{ form.direccion.id_for_label }}"
-                               class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                            Dirección
-                        </label>
-                        {{ form.direccion }}
-                        {% if form.direccion.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.direccion.errors|join:", " }}</p>
+                        {{ form.talla }}
+                        {% if form.talla.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.talla.errors|join:", " }}</p>
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- Tarjeta de Cálculo Automático IMC -->
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-150 flex items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">IMC Calculado</span>
+                        <span id="calc-imc-value" class="text-3xl font-black text-slate-700 leading-none">--</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 text-right">Clasificación</span>
+                        <span id="calc-imc-badge" class="px-2 py-1 rounded text-xs font-semibold bg-slate-200 text-slate-500 border border-slate-300">
+                            Pendiente
+                        </span>
+                    </div>
+                </div>
             </div>
+
+            <!-- SECCIÓN 4: MOTIVO DE CONSULTA -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                    <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i data-lucide="target" class="w-4 h-4 text-teal-600"></i>
+                        4. Motivo de Consulta
+                    </h2>
+                </div>
+
+                <div>
+                    <label for="{{ form.motivo_consulta.id_for_label }}" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                        Objetivo / Motivo principal <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.motivo_consulta }}
+                    {% if form.motivo_consulta.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.motivo_consulta.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.observaciones_iniciales.id_for_label }}" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                        Observaciones iniciales
+                    </label>
+                    {{ form.observaciones_iniciales }}
+                    {% if form.observaciones_iniciales.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.observaciones_iniciales.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
         </div>
 
-        <!-- Fila 2: Información de Salud (ancho completo) -->
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <div class="mb-4">
-                <h2 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <i data-lucide="heart-pulse" class="w-4 h-4 text-teal-600"></i>
-                    Información de Salud
-                </h2>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div>
-                    <label for="{{ form.condiciones_medicas.id_for_label }}"
-                           class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                        Condiciones Médicas
-                    </label>
-                    {{ form.condiciones_medicas }}
-                    {% if form.condiciones_medicas.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ form.condiciones_medicas.errors|join:", " }}</p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label for="{{ form.alergias.id_for_label }}"
-                           class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                        Alergias
-                    </label>
-                    {{ form.alergias }}
-                    {% if form.alergias.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ form.alergias.errors|join:", " }}</p>
-                    {% endif %}
-                </div>
-                <div>
-                    <label for="{{ form.notas_generales.id_for_label }}"
-                           class="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                        Notas Generales
-                    </label>
-                    {{ form.notas_generales }}
-                    {% if form.notas_generales.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ form.notas_generales.errors|join:", " }}</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Botones de acción -->
-        <div class="flex items-center gap-3 pt-1">
+        <!-- Botones de Acción -->
+        <div class="flex justify-end gap-3 pt-3 border-t border-slate-200">
+            <button type="button" onclick="if(typeof closeModal==='function'){closeModal();}else{window.history.back();}"
+                    class="border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium rounded-lg px-5 py-2.5 text-sm transition-all duration-200">
+                Cancelar
+            </button>
             <button type="submit"
-                    class="bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg px-5 py-2.5 text-sm
+                    class="bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg px-6 py-2.5 text-sm
                            transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
                 <i data-lucide="{% if form.instance.pk %}check{% else %}user-plus{% endif %}" class="w-4 h-4"></i>
                 {% if form.instance.pk %}Guardar Cambios{% else %}Registrar Paciente{% endif %}
             </button>
         </div>
     </form>
+
+    <!-- JS de cálculos en tiempo real y vista previa de foto -->
+    <script>
+        (function() {
+            const form = document.getElementById('paciente-form');
+            if (!form) return;
+
+            const fechaNacInput = form.querySelector('#id_fecha_nacimiento');
+            const pesoInput = form.querySelector('#id_peso');
+            const tallaInput = form.querySelector('#id_talla');
+            
+            const ageValueSpan = document.getElementById('calc-age-value');
+            const ageBadgeSpan = document.getElementById('calc-age-badge');
+            const imcValueSpan = document.getElementById('calc-imc-value');
+            const imcBadgeSpan = document.getElementById('calc-imc-badge');
+
+             function calculateAge() {
+                if (!fechaNacInput) return;
+                const dateVal = fechaNacInput.value;
+                if (!dateVal) {
+                    ageValueSpan.textContent = '--';
+                    ageBadgeSpan.classList.add('hidden');
+                    return;
+                }
+                const parts = dateVal.split('-');
+                if (parts.length !== 3) return;
+                const birthYear = parseInt(parts[0], 10);
+                const birthMonth = parseInt(parts[1], 10) - 1;
+                const birthDay = parseInt(parts[2], 10);
+
+                const today = new Date();
+                let age = today.getFullYear() - birthYear;
+                const m = today.getMonth() - birthMonth;
+                if (m < 0 || (m === 0 && today.getDate() < birthDay)) {
+                    age--;
+                }
+                if (!isNaN(age) && age >= 0) {
+                    ageValueSpan.textContent = age + ' años';
+                    ageBadgeSpan.classList.remove('hidden');
+                } else {
+                    ageValueSpan.textContent = '--';
+                    ageBadgeSpan.classList.add('hidden');
+                }
+            }
+
+            function calculateIMC() {
+                if (!pesoInput || !tallaInput) return;
+                const peso = parseFloat(pesoInput.value);
+                const talla = parseFloat(tallaInput.value);
+                if (!peso || !talla || talla <= 0) {
+                    imcValueSpan.textContent = '--';
+                    imcBadgeSpan.textContent = 'Pendiente';
+                    imcBadgeSpan.className = "px-2 py-1 rounded text-xs font-semibold bg-slate-100 text-slate-400 border border-slate-200";
+                    return;
+                }
+
+                // Si ingresa la talla en metros (ej: 1.65), convertimos a cm para el cálculo local
+                const tallaCm = (talla < 3) ? (talla * 100) : talla;
+                const tallaM = tallaCm / 100;
+                const imc = (peso / (tallaM * tallaM)).toFixed(1);
+                imcValueSpan.textContent = imc;
+
+                let classification = '';
+                let badgeClass = '';
+
+                if (imc < 18.5) {
+                    classification = 'Bajo peso';
+                    badgeClass = 'bg-amber-50 text-amber-600 border border-amber-200';
+                } else if (imc >= 18.5 && imc <= 24.9) {
+                    classification = 'Normal';
+                    badgeClass = 'bg-emerald-50 text-emerald-600 border border-emerald-200';
+                } else if (imc >= 25 && imc <= 29.9) {
+                    classification = 'Sobrepeso';
+                    badgeClass = 'bg-amber-50 text-amber-600 border border-amber-200';
+                } else if (imc >= 30 && imc <= 34.9) {
+                    classification = 'Obesidad I';
+                    badgeClass = 'bg-red-50 text-red-600 border border-red-200';
+                } else if (imc >= 35 && imc <= 39.9) {
+                    classification = 'Obesidad II';
+                    badgeClass = 'bg-red-50 text-red-600 border border-red-200';
+                } else {
+                    classification = 'Obesidad III';
+                    badgeClass = 'bg-red-100 text-red-700 border border-red-300';
+                }
+
+                imcBadgeSpan.textContent = classification;
+                imcBadgeSpan.className = `px-2 py-1 rounded text-xs font-semibold ${badgeClass}`;
+            }
+
+            if (fechaNacInput) {
+                fechaNacInput.addEventListener('input', calculateAge);
+                fechaNacInput.addEventListener('change', calculateAge);
+            }
+            if (pesoInput) pesoInput.addEventListener('input', calculateIMC);
+            if (tallaInput) tallaInput.addEventListener('input', calculateIMC);
+
+            // Cargas iniciales en caso de edición
+            calculateAge();
+            calculateIMC();
+        })();
+
+        function previewPhoto(input) {
+            const preview = document.getElementById('photo-preview');
+            const placeholder = document.getElementById('photo-placeholder-icon');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.src = '';
+                preview.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+        }
+    </script>
 </div>
+

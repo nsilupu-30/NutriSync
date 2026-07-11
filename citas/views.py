@@ -9,10 +9,15 @@ from django.contrib import messages
 from django.views.generic import ListView, CreateView, DetailView, UpdateView
 from django.urls import reverse_lazy
 from django.utils import timezone
-from datetime import timedelta
+from datetime import datetime, date, timedelta
+import calendar
+from django.db.models import Q
+from django.http import JsonResponse
 from .models import Cita
 from .forms import CitaForm
-from config.choices import EstadoCita
+from config.choices import TipoCita, EstadoCita
+from seguimiento.models import MedidaCorporal
+from pacientes.models import PlanAlimentario, Paciente
 
 
 class NutricionistaCitaMixin(LoginRequiredMixin):
@@ -29,7 +34,7 @@ class NutricionistaCitaMixin(LoginRequiredMixin):
 class AgendaView(NutricionistaCitaMixin, ListView):
     """
     Lista las citas asociadas al nutricionista autenticado.
-    Soporta filtros para visualización por Día, Semana y Próximas.
+    Soporta filtros para visualización por Día, Semana, Mes y búsquedas.
     """
 
     model = Cita
@@ -37,44 +42,214 @@ class AgendaView(NutricionistaCitaMixin, ListView):
     context_object_name = "citas"
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        hoy = timezone.localtime(timezone.now())
-        fecha_hoy = hoy.date()
+        # Filtramos por citas asociadas al paciente del nutricionista logueado o directamente asociadas al nutricionista
+        # (para bloqueos de horarios)
+        qs = Cita.objects.filter(
+            Q(paciente__nutricionista=self.request.user) | Q(nutricionista=self.request.user)
+        ).select_related("paciente")
         
-        # Filtro de tipo de vista
-        self.vista = self.request.GET.get("vista", "proximas")
-
-        if self.vista == "dia":
-            # Solo citas de hoy
-            qs = qs.filter(fecha_hora__date=fecha_hoy)
-        elif self.vista == "semana":
-            # Citas desde el inicio del día de hoy hasta dentro de 7 días
-            fin_semana = fecha_hoy + timedelta(days=7)
-            qs = qs.filter(fecha_hora__date__range=[fecha_hoy, fin_semana])
+        # 1. Obtener fecha seleccionada
+        fecha_str = self.request.GET.get("fecha")
+        if fecha_str:
+            try:
+                self.selected_date = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+            except ValueError:
+                self.selected_date = timezone.localtime(timezone.now()).date()
         else:
-            # Por defecto: todas las citas futuras (de hoy en adelante)
-            # o citas pendientes de hoy.
-            inicio_hoy = hoy.replace(hour=0, minute=0, second=0, microsecond=0)
-            qs = qs.filter(fecha_hora__gte=inicio_hoy)
+            self.selected_date = timezone.localtime(timezone.now()).date()
+
+        # 2. Obtener filtro de tipo de vista (dia, semana, mes - por defecto: semana)
+        self.vista = self.request.GET.get("vista", "semana")
+        
+        # 3. Aplicar filtros de fecha según vista
+        if self.vista == "dia":
+            qs = qs.filter(fecha_hora__date=self.selected_date)
+        elif self.vista == "semana":
+            # Obtener lunes de la semana de la fecha seleccionada
+            lunes = self.selected_date - timedelta(days=self.selected_date.weekday())
+            domingo = lunes + timedelta(days=6)
+            qs = qs.filter(fecha_hora__date__range=[lunes, domingo])
+        elif self.vista == "mes":
+            # Rango del mes
+            primer_dia = self.selected_date.replace(day=1)
+            _, ult_dia_num = calendar.monthrange(self.selected_date.year, self.selected_date.month)
+            ultimo_dia = self.selected_date.replace(day=ult_dia_num)
+            qs = qs.filter(fecha_hora__date__range=[primer_dia, ultimo_dia])
+        else:
+            # Por defecto: todas las futuras
+            hoy = timezone.localtime(timezone.now()).date()
+            qs = qs.filter(fecha_hora__date__gte=hoy)
+
+        # 4. Filtro de búsqueda por Paciente
+        self.buscar = self.request.GET.get("buscar", "").strip()
+        if self.buscar:
+            qs = qs.filter(
+                Q(paciente__nombre__icontains=self.buscar) | Q(paciente__apellido__icontains=self.buscar)
+            )
+
+        # 5. Filtros por Tipo y Estado
+        self.filtro_tipo = self.request.GET.get("tipo", "").strip()
+        if self.filtro_tipo:
+            qs = qs.filter(tipo=self.filtro_tipo)
+
+        self.filtro_estado = self.request.GET.get("estado", "").strip()
+        if self.filtro_estado:
+            qs = qs.filter(estado=self.filtro_estado)
 
         return qs.order_by("fecha_hora")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # Pasar parámetros de búsqueda y filtros al contexto
         context["vista"] = self.vista
+        context["selected_date"] = self.selected_date
+        context["selected_date_str"] = self.selected_date.strftime("%Y-%m-%d")
+        context["buscar"] = self.buscar
+        context["filtro_tipo"] = self.filtro_tipo
+        context["filtro_estado"] = self.filtro_estado
         
-        # Totales para los tabs / indicadores rápidos
-        hoy = timezone.localtime(timezone.now()).date()
-        qs_base = Cita.objects.filter(paciente__nutricionista=self.request.user)
+        # Choices para los filtros
+        context["tipos_choices"] = TipoCita.CHOICES
+        context["estados_choices"] = EstadoCita.CHOICES
+
+        # Meses en español
+        meses = {
+            1: "enero", 2: "febrero", 3: "marzo", 4: "abril", 5: "mayo", 6: "junio",
+            7: "julio", 8: "agosto", 9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"
+        }
         
-        context["total_hoy"] = qs_base.filter(fecha_hora__date=hoy).count()
-        context["total_semana"] = qs_base.filter(
-            fecha_hora__date__range=[hoy, hoy + timedelta(days=7)]
-        ).count()
-        context["total_proximas"] = qs_base.filter(
-            fecha_hora__gte=timezone.localtime(timezone.now()).replace(hour=0, minute=0, second=0, microsecond=0)
-        ).count()
+        # Días de la semana en español
+        dias_semana_es = {
+            0: "lunes", 1: "martes", 2: "miércoles", 3: "jueves", 4: "viernes", 5: "sábado", 6: "domingo"
+        }
+
+        # 1. Calcular fechas Anterior y Siguiente
+        if self.vista == "dia":
+            context["prev_date_str"] = (self.selected_date - timedelta(days=1)).strftime("%Y-%m-%d")
+            context["next_date_str"] = (self.selected_date + timedelta(days=1)).strftime("%Y-%m-%d")
+            # Label para vista Día
+            context["semana_label"] = f"{dias_semana_es[self.selected_date.weekday()]}, {self.selected_date.day} de {meses[self.selected_date.month]} {self.selected_date.year}"
+        elif self.vista == "semana":
+            context["prev_date_str"] = (self.selected_date - timedelta(days=7)).strftime("%Y-%m-%d")
+            context["next_date_str"] = (self.selected_date + timedelta(days=7)).strftime("%Y-%m-%d")
+            # Label para vista Semana: e.g. "9 - 15 julio 2026"
+            lunes = self.selected_date - timedelta(days=self.selected_date.weekday())
+            domingo = lunes + timedelta(days=6)
+            if lunes.month == domingo.month:
+                context["semana_label"] = f"{lunes.day} - {domingo.day} {meses[lunes.month]} {lunes.year}"
+            else:
+                if lunes.year == domingo.year:
+                    context["semana_label"] = f"{lunes.day} {meses[lunes.month]} - {domingo.day} {meses[domingo.month]} {lunes.year}"
+                else:
+                    context["semana_label"] = f"{lunes.day} {meses[lunes.month]} {lunes.year} - {domingo.day} {meses[domingo.month]} {domingo.year}"
+        elif self.vista == "mes":
+            # Mes anterior
+            if self.selected_date.month == 1:
+                prev_date = self.selected_date.replace(year=self.selected_date.year - 1, month=12, day=1)
+            else:
+                prev_date = self.selected_date.replace(month=self.selected_date.month - 1, day=1)
+            # Mes siguiente
+            if self.selected_date.month == 12:
+                next_date = self.selected_date.replace(year=self.selected_date.year + 1, month=1, day=1)
+            else:
+                next_date = self.selected_date.replace(month=self.selected_date.month + 1, day=1)
+            context["prev_date_str"] = prev_date.strftime("%Y-%m-%d")
+            context["next_date_str"] = next_date.strftime("%Y-%m-%d")
+            # Label para vista Mes: e.g. "Julio 2026"
+            context["semana_label"] = f"{meses[self.selected_date.month]} {self.selected_date.year}".capitalize()
+
+        # Indicador de hora actual
+        ahora = timezone.localtime(timezone.now())
+        context["ahora_date"] = ahora.date()
+        lunes = self.selected_date - timedelta(days=self.selected_date.weekday())
+        domingo = lunes + timedelta(days=6)
         
+        if 8 <= ahora.hour < 20:
+            mins = (ahora.hour - 8) * 60 + ahora.minute
+            context["current_time_top_pct"] = (mins / 720.0) * 100.0
+        else:
+            context["current_time_top_pct"] = None
+
+        # 2. Generar datos del Calendario según vista
+        citas_list = list(context["citas"])
+        
+        # Calcular posicionamiento vertical en grilla de horas (08:00 a 20:00 = 12 horas = 720 minutos)
+        for cita in citas_list:
+            local_time = timezone.localtime(cita.fecha_hora)
+            mins_since_start = (local_time.hour - 8) * 60 + local_time.minute
+            if mins_since_start < 0:
+                mins_since_start = 0
+            elif mins_since_start > 720:
+                mins_since_start = 720
+                
+            cita.top_pct = (mins_since_start / 720.0) * 100.0
+            
+            dur = cita.duracion_minutos
+            if mins_since_start + dur > 720:
+                dur = 720 - mins_since_start
+            cita.height_pct = (dur / 720.0) * 100.0
+
+        if self.vista == "dia":
+            # Vista Día: Solo pasamos las citas del día, que ya están en context['citas']
+            pass
+            
+        elif self.vista == "semana":
+            # Vista Semana: Agrupar por día de la semana (Lunes a Domingo)
+            lunes = self.selected_date - timedelta(days=self.selected_date.weekday())
+            dias_semana = []
+            for i in range(7):
+                dia = lunes + timedelta(days=i)
+                citas_dia = [c for c in citas_list if c.fecha_hora.date() == dia]
+                dias_semana.append({
+                    "fecha": dia,
+                    "citas": citas_dia,
+                })
+            context["dias_semana"] = dias_semana
+            
+        elif self.vista == "mes":
+            # Vista Mes: Retornar los días del mes en grilla (incluyendo padding de meses adyacentes)
+            cal = calendar.Calendar(firstweekday=0)  # Lunes es 0
+            grid_weeks = cal.monthdatescalendar(self.selected_date.year, self.selected_date.month)
+            
+            semanas_grid = []
+            for week in grid_weeks:
+                semana_dias = []
+                for dia in week:
+                    citas_dia = [c for c in citas_list if c.fecha_hora.date() == dia]
+                    semana_dias.append({
+                        "fecha": dia,
+                        "es_mes_actual": dia.month == self.selected_date.month,
+                        "citas": citas_dia,
+                    })
+                semanas_grid.append(semana_dias)
+            context["semanas_grid"] = semanas_grid
+
+        # 3. Estadísticas del Día (según la fecha seleccionada)
+        # Excluimos los bloqueos de horario para las estadísticas
+        qs_dia = Cita.objects.filter(
+            Q(paciente__nutricionista=self.request.user) | Q(nutricionista=self.request.user),
+            fecha_hora__date=self.selected_date
+        ).exclude(tipo=TipoCita.BLOQUEO)
+        
+        context["consultas_dia"] = qs_dia.count()
+        context["primeras_consultas"] = qs_dia.filter(tipo=TipoCita.PRIMERA_CONSULTA).count()
+        context["seguimientos"] = qs_dia.filter(tipo=TipoCita.SEGUIMIENTO).count()
+        context["completadas"] = qs_dia.filter(estado=EstadoCita.COMPLETADA).count()
+        context["canceladas"] = qs_dia.filter(estado=EstadoCita.CANCELADA).count()
+        
+        # Pacientes únicos atendidos (con citas completadas ese día)
+        context["pacientes_atendidos"] = qs_dia.filter(estado=EstadoCita.COMPLETADA).values("paciente").distinct().count()
+
+        # 4. Próximas consultas del día (citas del día que aún no son canceladas, ordenadas por hora)
+        # Se listan bajo el calendario
+        context["citas_del_dia"] = qs_dia.exclude(estado=EstadoCita.CANCELADA).order_by("fecha_hora")
+
+        # 5. Lista de todos los pacientes activos de este nutricionista (para el modal de Nueva Cita / Buscar)
+        context["pacientes_activos"] = Paciente.objects.filter(
+            nutricionista=self.request.user, estado=True
+        ).order_by("nombre", "apellido")
+
         return context
 
 
@@ -211,3 +386,147 @@ def cita_cambiar_estado(request, pk):
         messages.error(request, "Estado de cita no válido.")
         
     return redirect("citas:detalle", pk=cita.pk)
+
+
+# ─── Bloquear Horario ────────────────────────────────────────────────────────
+
+@login_required
+@require_POST
+def cita_bloquear(request):
+    """
+    Crea un bloqueo de horario para el nutricionista autenticado.
+    El bloqueo se almacena como una Cita sin paciente asociado.
+    """
+    fecha_str = request.POST.get("fecha")
+    hora_str = request.POST.get("hora")
+    duracion = request.POST.get("duracion", "45")
+    motivo = request.POST.get("motivo", "Bloqueo de horario")
+
+    if not fecha_str or not hora_str:
+        messages.error(request, "Debe especificar la fecha y la hora de inicio del bloqueo.")
+        return redirect("citas:agenda")
+
+    try:
+        # Combinar fecha y hora
+        fecha_hora_str = f"{fecha_str} {hora_str}"
+        fecha_hora = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
+        
+        # Hacerla aware de timezone para cumplir con Django settings
+        from django.utils.timezone import make_aware
+        fecha_hora = make_aware(fecha_hora)
+
+        bloqueo = Cita(
+            paciente=None,
+            nutricionista=request.user,
+            fecha_hora=fecha_hora,
+            duracion_minutos=int(duracion),
+            tipo=TipoCita.BLOQUEO,
+            estado=EstadoCita.BLOQUEADA,
+            motivo=motivo,
+            costo=0.00
+        )
+        bloqueo.save()
+        messages.success(request, f"Horario bloqueado con éxito para el {fecha_hora.strftime('%d/%m/%Y %H:%M')}.")
+    except ValidationError as ve:
+        # Extraer mensajes de error amigables
+        msg = ""
+        if hasattr(ve, 'message_dict'):
+            msg = "; ".join([f"{k}: {', '.join(v)}" for k, v in ve.message_dict.items()])
+        else:
+            msg = str(ve)
+        messages.error(request, f"Error al bloquear horario: {msg}")
+    except Exception as e:
+        messages.error(request, f"Error inesperado al bloquear horario: {str(e)}")
+
+    # Redirigir conservando la fecha de la vista
+    return redirect(f"/agenda/?vista=semana&fecha={fecha_str}")
+
+
+# ─── Detalle AJAX en JSON de Cita ────────────────────────────────────────────
+
+@login_required
+def cita_detalle_json(request, pk):
+    """
+    Endpoint AJAX que retorna en JSON toda la información requerida de una cita
+    o de un bloqueo, incluyendo la información de evolución de paciente desde la base de datos.
+    """
+    # Aislamiento multi-nutricionista
+    cita = get_object_or_404(
+        Cita.objects.filter(
+            Q(paciente__nutricionista=request.user) | Q(nutricionista=request.user)
+        ),
+        pk=pk
+    )
+
+    data = {
+        "id": cita.pk,
+        "fecha": timezone.localtime(cita.fecha_hora).strftime("%d/%m/%Y"),
+        "fecha_iso": timezone.localtime(cita.fecha_hora).strftime("%Y-%m-%d"),
+        "hora": timezone.localtime(cita.fecha_hora).strftime("%H:%M"),
+        "duracion": cita.duracion_minutos,
+        "tipo": cita.get_tipo_display(),
+        "tipo_raw": cita.tipo,
+        "estado": cita.get_estado_display(),
+        "estado_raw": cita.estado,
+        "motivo": cita.motivo,
+        "is_bloqueo": cita.tipo == TipoCita.BLOQUEO,
+    }
+
+    if cita.paciente:
+        paciente = cita.paciente
+        # Calcular edad si no está guardada
+        edad = paciente.edad
+        
+        # 1. Obtener último peso e IMC registrado en MedidasCorporales
+        ultima_medida = MedidaCorporal.objects.filter(paciente=paciente).order_by('-fecha', '-fecha_registro').first()
+        if ultima_medida:
+            ultimo_peso = f"{ultima_medida.peso_kg} kg"
+            imc_actual = str(ultima_medida.imc)
+        else:
+            ultimo_peso = f"{paciente.peso} kg" if paciente.peso else "—"
+            imc_actual = str(paciente.imc_inicial) if paciente.imc_inicial else "—"
+
+        # 2. Obtener última consulta completada (antes de la actual)
+        ultima_cita_completada = Cita.objects.filter(
+            paciente=paciente,
+            estado=EstadoCita.COMPLETADA,
+            fecha_hora__lt=cita.fecha_hora
+        ).order_by('-fecha_hora').first()
+
+        if ultima_cita_completada:
+            fecha_u = timezone.localtime(ultima_cita_completada.fecha_hora).strftime("%d/%m/%Y")
+            ultima_consulta = f"{fecha_u} — {ultima_cita_completada.get_tipo_display()}"
+        else:
+            ultima_consulta = "Sin consultas previas"
+
+        # 3. Obtener plan alimentario activo
+        plan_activo = PlanAlimentario.objects.filter(paciente=paciente, estado="Activo").first()
+        plan_activo_str = plan_activo.nombre if plan_activo else "Ninguno activo"
+
+        # Agregar datos de paciente a la respuesta
+        data.update({
+            "paciente_id": paciente.pk,
+            "paciente_nombre": paciente.nombre_completo,
+            "paciente_edad": f"{edad} años" if edad else "—",
+            "paciente_telefono": paciente.telefono or "—",
+            "paciente_objetivo": paciente.informacion_clinica.get("objetivo_principal") or paciente.motivo or "—",
+            "ultimo_peso": ultimo_peso,
+            "imc_actual": imc_actual,
+            "ultima_consulta": ultima_consulta,
+            "plan_activo": plan_activo_str,
+        })
+    else:
+        # Datos vacíos para el bloqueo
+        data.update({
+            "paciente_id": None,
+            "paciente_nombre": "Horario Bloqueado",
+            "paciente_edad": "—",
+            "paciente_telefono": "—",
+            "paciente_objetivo": "—",
+            "ultimo_peso": "—",
+            "imc_actual": "—",
+            "ultima_consulta": "—",
+            "plan_activo": "—",
+        })
+
+    return JsonResponse(data)

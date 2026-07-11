@@ -24,6 +24,7 @@ class PacienteCreateViewTestCase(TestCase):
             "fecha_nacimiento": "1990-05-15",
             "peso": 75.5,
             "talla": 170.0,
+            "motivo_consulta": "Mejora de hábitos",
         }
 
     def test_crear_paciente_pagina_completa_redirecciona(self):

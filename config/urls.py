@@ -4,6 +4,8 @@
 
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -21,6 +23,9 @@ urlpatterns = [
     path("seguimiento/", include("seguimiento.urls")),
 ]
 
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 # Handlers de error personalizados con diseño consistente al resto del sistema
 handler404 = "core.views.error_404"
 handler500 = "core.views.error_500"
@@ -29,3 +34,4 @@ handler500 = "core.views.error_500"
 admin.site.site_header = "NutriSync"
 admin.site.site_title = "NutriSync Admin"
 admin.site.index_title = "Administración de NutriSync"
+

@@ -5,6 +5,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.contrib.auth.models import User
 from datetime import timedelta
 from config.choices import TipoCita, EstadoCita
 from pacientes.models import Paciente
@@ -20,8 +21,18 @@ class Cita(models.Model):
     paciente = models.ForeignKey(
         Paciente,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name="citas",
         verbose_name="Paciente",
+    )
+    nutricionista = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="citas_creadas",
+        verbose_name="Nutricionista",
     )
     fecha_hora = models.DateTimeField(
         verbose_name="Fecha y hora",
@@ -104,6 +115,22 @@ class Cita(models.Model):
             return self.fecha_hora + timedelta(minutes=self.duracion_minutos)
         return None
 
+    @property
+    def color_class(self):
+        if self.estado == 'cancelada':
+            return 'red'
+        elif self.estado == 'bloqueada' or self.tipo == 'bloqueo':
+            return 'grey'
+        elif self.tipo == 'primera_consulta':
+            return 'green'
+        elif self.tipo == 'seguimiento':
+            return 'blue'
+        elif self.tipo == 'evaluacion':
+            return 'purple'
+        elif self.tipo == 'control':
+            return 'orange'
+        return 'blue'
+
     # ─── Validaciones de Negocio ─────────────────────────────────────────────
     def clean(self):
         super().clean()
@@ -143,43 +170,55 @@ class Cita(models.Model):
                     )
 
         # 3. Validar solapamiento de horarios para el mismo nutricionista
-        if self.paciente_id and self.fecha_hora and self.duracion_minutos:
-            nutricionista = self.paciente.nutricionista
-            inicio_nuevo = self.fecha_hora
-            fin_nuevo = self.fecha_fin
-            fecha_dia = self.fecha_hora.date()
+        if self.fecha_hora and self.duracion_minutos:
+            # Si hay paciente, el nutricionista es paciente.nutricionista
+            # Si no hay paciente (bloqueo), debe estar asociado directamente al nutricionista
+            nutricionista = self.paciente.nutricionista if self.paciente_id else self.nutricionista
+            
+            if nutricionista:
+                inicio_nuevo = self.fecha_hora
+                fin_nuevo = self.fecha_fin
+                fecha_dia = self.fecha_hora.date()
 
-            # Obtenemos todas las citas activas de este nutricionista en el mismo día
-            citas_dia = (
-                Cita.objects.filter(
-                    paciente__nutricionista=nutricionista,
-                    fecha_hora__date=fecha_dia,
-                )
-                .exclude(estado=EstadoCita.CANCELADA)
-                .select_related("paciente")
-            )
-
-            # Excluimos la cita actual en caso de edición
-            if self.pk:
-                citas_dia = citas_dia.exclude(pk=self.pk)
-
-            for cita_existente in citas_dia:
-                inicio_existente = cita_existente.fecha_hora
-                fin_existente = cita_existente.fecha_fin
-
-                # Condición de traslape: (inicio1 < fin2) AND (fin1 > inicio2)
-                if inicio_existente < fin_nuevo and fin_existente > inicio_nuevo:
-                    errors["fecha_hora"] = ValidationError(
-                        f"El horario seleccionado se solapa con otra cita programada para el paciente "
-                        f"{cita_existente.paciente.nombre_completo} "
-                        f"({inicio_existente.strftime('%H:%M')} - {fin_existente.strftime('%H:%M')})."
+                # Obtenemos todas las citas activas/bloqueos de este nutricionista en el mismo día
+                # Filtramos por nutricionista del paciente o nutricionista directo en Cita
+                citas_dia = (
+                    Cita.objects.filter(
+                        models.Q(paciente__nutricionista=nutricionista) | models.Q(nutricionista=nutricionista),
+                        fecha_hora__date=fecha_dia,
                     )
-                    break
+                    .exclude(estado=EstadoCita.CANCELADA)
+                )
+
+                # Excluimos la cita actual en caso de edición
+                if self.pk:
+                    citas_dia = citas_dia.exclude(pk=self.pk)
+
+                for cita_existente in citas_dia:
+                    inicio_existente = cita_existente.fecha_hora
+                    fin_existente = cita_existente.fecha_fin
+
+                    # Condición de traslape: (inicio1 < fin2) AND (fin1 > inicio2)
+                    if inicio_existente < fin_nuevo and fin_existente > inicio_nuevo:
+                        desc_cita = (
+                            f"otra cita del paciente {cita_existente.paciente.nombre_completo}"
+                            if cita_existente.paciente_id
+                            else f"un bloqueo de horario ({cita_existente.motivo})"
+                        )
+                        errors["fecha_hora"] = ValidationError(
+                            f"El horario seleccionado se solapa con {desc_cita} "
+                            f"({inicio_existente.strftime('%H:%M')} - {fin_existente.strftime('%H:%M')})."
+                        )
+                        break
 
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        # Auto-asignar nutricionista desde el paciente si existe
+        if self.paciente_id and not self.nutricionista_id:
+            self.nutricionista = self.paciente.nutricionista
+            
         # Siguiendo los estándares del docente de la sesión 2,
         # forzamos full_clean() antes de guardar para asegurar la integridad de datos
         self.full_clean()

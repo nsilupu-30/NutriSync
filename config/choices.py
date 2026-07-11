@@ -16,11 +16,13 @@ class TipoCita:
     SEGUIMIENTO = "seguimiento"
     CONTROL = "control"
     EVALUACION = "evaluacion"
+    BLOQUEO = "bloqueo"
     CHOICES = [
         (PRIMERA_CONSULTA, "Primera Consulta"),
         (SEGUIMIENTO, "Seguimiento"),
         (CONTROL, "Control"),
         (EVALUACION, "Evaluación"),
+        (BLOQUEO, "Bloqueo de Horario"),
     ]
 
 
@@ -29,11 +31,13 @@ class EstadoCita:
     COMPLETADA = "completada"
     CANCELADA = "cancelada"
     NO_ASISTIO = "no_asistio"
+    BLOQUEADA = "bloqueada"
     CHOICES = [
         (PROGRAMADA, "Programada"),
         (COMPLETADA, "Completada"),
         (CANCELADA, "Cancelada"),
         (NO_ASISTIO, "No asistió"),
+        (BLOQUEADA, "Bloqueada"),
     ]
 
 

@@ -222,3 +222,68 @@ class CitaModelTestCase(TestCase):
             nueva_cita.save()
         except ValidationError:
             self.fail("ValidationError lanzada al solapar con cita cancelada.")
+
+    def test_bloqueo_horario_exitoso(self):
+        """Valida que se pueda crear un bloqueo de horario sin paciente."""
+        bloqueo = Cita.objects.create(
+            paciente=None,
+            nutricionista=self.nutricionista_a,
+            fecha_hora=self.fecha_base,
+            duracion_minutos=60,
+            tipo=TipoCita.BLOQUEO,
+            estado=EstadoCita.BLOQUEADA,
+            motivo="Almuerzo",
+        )
+        self.assertIsNotNone(bloqueo.pk)
+        self.assertIsNone(bloqueo.paciente)
+        self.assertEqual(bloqueo.nutricionista, self.nutricionista_a)
+
+    def test_error_solapamiento_cita_con_bloqueo(self):
+        """Valida que no se permita agendar una cita que se solape con un bloqueo de horario."""
+        hora_base = self.fecha_base.replace(hour=11, minute=0, second=0, microsecond=0)
+        # Crear bloqueo de 11:00 a 12:00
+        Cita.objects.create(
+            paciente=None,
+            nutricionista=self.nutricionista_a,
+            fecha_hora=hora_base,
+            duracion_minutos=60,
+            tipo=TipoCita.BLOQUEO,
+            estado=EstadoCita.BLOQUEADA,
+            motivo="Reunión",
+        )
+
+        # Cita de 11:30 a 12:15
+        cita_solapada = Cita(
+            paciente=self.paciente_activo_a,
+            fecha_hora=hora_base + timedelta(minutes=30),
+            duracion_minutos=45,
+            motivo="Consulta de rutina",
+        )
+        
+        with self.assertRaises(ValidationError):
+            cita_solapada.save()
+
+    def test_error_solapamiento_bloqueo_con_cita(self):
+        """Valida que no se permita crear un bloqueo que se solape con una cita preexistente."""
+        hora_base = self.fecha_base.replace(hour=14, minute=0, second=0, microsecond=0)
+        # Crear cita de 14:00 a 14:45
+        Cita.objects.create(
+            paciente=self.paciente_activo_a,
+            fecha_hora=hora_base,
+            duracion_minutos=45,
+            motivo="Consulta de rutina",
+        )
+
+        # Bloqueo de 14:30 a 15:30
+        bloqueo_solapado = Cita(
+            paciente=None,
+            nutricionista=self.nutricionista_a,
+            fecha_hora=hora_base + timedelta(minutes=30),
+            duracion_minutos=60,
+            tipo=TipoCita.BLOQUEO,
+            estado=EstadoCita.BLOQUEADA,
+            motivo="Capacitación",
+        )
+        
+        with self.assertRaises(ValidationError):
+            bloqueo_solapado.save()
