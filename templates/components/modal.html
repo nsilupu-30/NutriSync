@@ -2,8 +2,7 @@
 <!-- Componente modal reutilizable. Overlay con backdrop que cubre toda la pantalla.
      Se abre/cierra vía JS: openModal(title, content) / closeModal() -->
 
-<div id="modal-overlay" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4"
-     onclick="if(event.target===this)closeModal()">
+<div id="modal-overlay" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[95vh] flex flex-col
                 transform transition-all duration-200 scale-95 opacity-0"
          id="modal-container">

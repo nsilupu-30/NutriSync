@@ -338,4 +338,18 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebar.classList.remove('-translate-x-full');
         }
     });
+    // Solución para evitar cerrar modal al seleccionar texto (drag selection)
+    const modalOverlay = document.getElementById('modal-overlay');
+    if (modalOverlay) {
+        let mousedownTarget = null;
+        modalOverlay.addEventListener('mousedown', (e) => {
+            mousedownTarget = e.target;
+        });
+        modalOverlay.addEventListener('click', (e) => {
+            // Solo cerrar si el mousedown y el click ocurrieron en el overlay y no hay texto seleccionado
+            if (e.target === modalOverlay && mousedownTarget === modalOverlay && !window.getSelection().toString()) {
+                closeModal();
+            }
+        });
+    }
 });
