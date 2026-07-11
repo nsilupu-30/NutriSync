@@ -5029,6 +5029,14 @@
                     input.value = last[f];
                 }
             });
+        } else {
+            // Fallback a los datos base del paciente si no hay mediciones previas
+            const basePesoStr = "{{ paciente.peso|default_if_none:'' }}";
+            const baseTallaStr = "{{ paciente.talla|default_if_none:'' }}";
+            const inputPeso = document.getElementById("eval-peso_kg");
+            const inputTalla = document.getElementById("eval-talla_cm");
+            if (inputPeso && basePesoStr) inputPeso.value = parseFloat(basePesoStr.replace(',', '.'));
+            if (inputTalla && baseTallaStr) inputTalla.value = parseFloat(baseTallaStr.replace(',', '.'));
         }
 
         if (modal && container) {
