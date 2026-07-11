@@ -755,7 +755,6 @@
         document.getElementById('drawer-fecha').innerText = "—";
         document.getElementById('drawer-hora').innerText = "—";
         document.getElementById('drawer-tipo').innerText = "—";
-        document.getElementById('drawer-estado').innerText = "—";
         document.getElementById('drawer-peso').innerText = "—";
         document.getElementById('drawer-imc').innerText = "—";
         document.getElementById('drawer-ultima-consulta').innerText = "—";
@@ -771,7 +770,6 @@
                 document.getElementById('drawer-fecha').innerText = data.fecha;
                 document.getElementById('drawer-hora').innerText = `${data.hora} - ${calcularHoraFin(data.hora, data.duracion)} (${data.duracion} min)`;
                 document.getElementById('drawer-tipo').innerText = data.tipo;
-                document.getElementById('drawer-estado').innerText = data.estado;
                 document.getElementById('drawer-motivo').innerText = data.motivo || '—';
 
                 // Iniciales para el avatar
@@ -830,7 +828,11 @@
                     }
 
                     // Setear URLs de acciones
-                    document.getElementById('drawer-btn-iniciar').href = `/pacientes/${data.paciente_id}/`;
+                    const iniciarBtn = document.getElementById('drawer-btn-iniciar');
+                    iniciarBtn.onclick = function(e) {
+                        e.preventDefault();
+                        iniciarConsultaDesdeAgenda(data.paciente_id, data.id, data.tipo_raw);
+                    };
                     document.getElementById('drawer-btn-ficha').href = `/pacientes/${data.paciente_id}/`;
                     document.getElementById('drawer-cancelar-form').action = `/citas/${data.id}/estado/`;
                 }
@@ -842,6 +844,34 @@
                 console.error("Error al obtener detalle de cita:", err);
                 document.getElementById('drawer-paciente-nombre').innerText = "Error al cargar datos";
             });
+    }
+
+    function iniciarConsultaDesdeAgenda(pacienteId, citaId, tipoCita) {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const formData = new FormData();
+        formData.append("csrfmiddlewaretoken", csrfToken);
+        formData.append("tipo", tipoCita || "seguimiento");
+        formData.append("cita_id", citaId);
+        
+        fetch(`/pacientes/${pacienteId}/consultas/iniciar/`, {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = `/pacientes/${pacienteId}/?consulta_id=${data.consulta_id}`;
+            } else {
+                alert("Error al iniciar la consulta: " + (data.error || "Ocurrió un problema."));
+            }
+        })
+        .catch(err => {
+            console.error("Error:", err);
+            alert("Error de conexión al iniciar la consulta.");
+        });
     }
 
     function closeAppointmentDrawer() {
