@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "citas",  # Agenda de citas
     "nutricion",  # Base de alimentos y planes nutricionales
     "seguimiento",  # Medidas corporales y notas clínicas
+    "facturacion",  # Facturación, cobros y suscripciones
 ]
 
 MIDDLEWARE = [
@@ -158,4 +159,11 @@ else:
         default="http://localhost:8081,http://127.0.0.1:8081",
         cast=lambda v: [s.strip() for s in v.split(",")]
     )
+
+
+# ─── Configuración Stripe (Facturación) ──────────────────────────────────────
+STRIPE_PUBLIC_KEY = config("STRIPE_PUBLIC_KEY", default="pk_test_placeholder")
+STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="sk_test_placeholder")
+STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="whsec_placeholder")
+STRIPE_CURRENCY = "PEN"
 

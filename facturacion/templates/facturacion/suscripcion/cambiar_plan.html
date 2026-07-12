@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cambiar Plan{% endblock %}
+{% block page_title %}Cambiar Plan de Suscripción{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="mb-6">
+        <a href="{% url 'facturacion:suscripcion_detalle' %}"
+           class="inline-flex items-center text-sm text-slate-500 hover:text-teal-600 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>
+            Volver a mi suscripción
+        </a>
+    </div>
+
+    <!-- Formulario -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-6">Selecciona tu nuevo plan</h3>
+
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Planes -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-3">Plan *</label>
+                <div class="space-y-3">
+                    {% for choice in form.plan %}
+                    <label class="flex items-start p-4 border border-slate-200 rounded-xl hover:border-teal-300 transition-colors cursor-pointer">
+                        {{ choice.tag }}
+                        <div class="ml-3">
+                            <span class="font-medium text-slate-800">{{ choice.choice_label }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Tipo de facturación -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-3">Tipo de facturación *</label>
+                <div class="grid grid-cols-2 gap-4">
+                    {% for choice in form.tipo_facturacion %}
+                    <label class="flex items-center p-4 border border-slate-200 rounded-xl hover:border-teal-300 transition-colors cursor-pointer">
+                        {{ choice.tag }}
+                        <div class="ml-3">
+                            <span class="font-medium text-slate-800">{{ choice.choice_label }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex items-center justify-end gap-3 pt-4">
+                <a href="{% url 'facturacion:suscripcion_detalle' %}"
+                   class="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors text-sm font-medium">
+                    Cancelar
+                </a>
+                <button type="submit"
+                        class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+                    <i data-lucide="check" class="w-4 h-4 mr-2 inline"></i>
+                    Cambiar plan
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

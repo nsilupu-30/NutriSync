@@ -91,7 +91,7 @@ def dashboard_view(request):
     )
 
     pacientes_con_plan = PlanNutricional.objects.filter(
-        paciente__nutricionista=request.user, estado=True
+        nutricionista=request.user, estado="Activo"
     ).count()
 
     ultimos_pacientes = Paciente.objects.filter(nutricionista=request.user).order_by(

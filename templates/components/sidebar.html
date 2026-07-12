@@ -60,6 +60,11 @@
             class="sidebar-link {% if request.resolver_match.namespace == 'seguimiento' and request.resolver_match.url_name == 'notas_dashboard' %}active{% endif %}">
             <i data-lucide="clipboard-list" class="w-5 h-5"></i> Notas Clínicas
         </a>
+
+        <a href="{% url 'facturacion:dashboard' %}"
+            class="sidebar-link {% if request.resolver_match.namespace == 'facturacion' %}active{% endif %}">
+            <i data-lucide="credit-card" class="w-5 h-5"></i> Facturación
+        </a>
     </nav>
 
     <!-- Sección inferior: perfil y logout -->

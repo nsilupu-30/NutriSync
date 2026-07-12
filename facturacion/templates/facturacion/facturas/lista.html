@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+{% load facturacion_tags %}
+
+{% block title %}Facturas{% endblock %}
+{% block page_title %}Facturas{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <p class="text-slate-500">Gestiona las facturas emitidas a tus pacientes.</p>
+        <a href="{% url 'facturacion:factura_crear' %}"
+           class="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+            Nueva factura
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <input type="text"
+                   name="paciente"
+                   placeholder="Nombre del paciente..."
+                   value="{{ filtro_form.paciente }}"
+                   class="form-input rounded-lg border-slate-300 text-sm">
+
+            <select name="estado" class="form-select rounded-lg border-slate-300 text-sm">
+                <option value="">Todos los estados</option>
+                {% for valor, texto in estados_factura %}
+                <option value="{{ valor }}" {% if filtro_form.estado == valor %}selected{% endif %}>{{ texto }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="date"
+                   name="fecha_desde"
+                   value="{{ filtro_form.fecha_desde }}"
+                   class="form-input rounded-lg border-slate-300 text-sm"
+                   placeholder="Fecha desde">
+
+            <input type="date"
+                   name="fecha_hasta"
+                   value="{{ filtro_form.fecha_hasta }}"
+                   class="form-input rounded-lg border-slate-300 text-sm"
+                   placeholder="Fecha hasta">
+
+            <button type="submit"
+                    class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
+                Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Tabla de facturas -->
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {% if facturas %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-sm text-slate-500 bg-slate-50 border-b border-slate-100">
+                        <th class="px-6 py-3 font-medium">N° Factura</th>
+                        <th class="px-6 py-3 font-medium">Paciente</th>
+                        <th class="px-6 py-3 font-medium">Subtotal</th>
+                        <th class="px-6 py-3 font-medium">IGV</th>
+                        <th class="px-6 py-3 font-medium">Total</th>
+                        <th class="px-6 py-3 font-medium">Estado</th>
+                        <th class="px-6 py-3 font-medium">Fecha emisión</th>
+                        <th class="px-6 py-3 font-medium">Vencimiento</th>
+                        <th class="px-6 py-3 font-medium">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for factura in facturas %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <a href="{% url 'facturacion:factura_detalle' pk=factura.pk %}"
+                               class="text-teal-600 hover:text-teal-700 font-medium">
+                                {{ factura.numero_factura }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ factura.paciente }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ factura.subtotal|formatear_moneda }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-500">{{ factura.igv|formatear_moneda }}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-slate-800">{{ factura.total|formatear_moneda }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium bg-{{ factura.estado|color_estado_factura }}-100 text-{{ factura.estado|color_estado_factura }}-700">
+                                {{ factura.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-500">{{ factura.fecha_emision|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-500">{{ factura.fecha_vencimiento|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'facturacion:factura_detalle' pk=factura.pk %}"
+                                   class="text-slate-400 hover:text-teal-600 transition-colors">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </a>
+                                {% if factura.archivo_pdf %}
+                                <a href="{{ factura.archivo_pdf.url }}" target="_blank"
+                                   class="text-slate-400 hover:text-blue-600 transition-colors">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+            <p class="text-sm text-slate-500">
+                Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }}
+            </p>
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}"
+                   class="px-3 py-1 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">
+                    ← Anterior
+                </a>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                <a href="?page={{ num }}"
+                   class="px-3 py-1 rounded-lg text-sm {% if page_obj.number == num %}bg-teal-600 text-white{% else %}border border-slate-200 text-slate-600 hover:bg-slate-50{% endif %}">
+                    {{ num }}
+                </a>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}"
+                   class="px-3 py-1 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">
+                    Siguiente →
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-12">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="file-text" class="w-8 h-8 text-slate-400"></i>
+            </div>
+            <p class="text-slate-500">No se encontraron facturas.</p>
+            <a href="{% url 'facturacion:factura_crear' %}"
+               class="inline-flex items-center mt-3 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+                <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                Crear primera factura
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

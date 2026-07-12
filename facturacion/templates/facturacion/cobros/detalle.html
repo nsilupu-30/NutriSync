@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static %}
+{% load facturacion_tags %}
+
+{% block title %}Cobro #{{ cobro.pk }}{% endblock %}
+{% block page_title %}Detalle del Cobro #{{ cobro.pk }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Encabezado -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'facturacion:cobros_lista' %}"
+           class="inline-flex items-center text-sm text-slate-500 hover:text-teal-600 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>
+            Volver a cobros
+        </a>
+        <span class="px-3 py-1 rounded-full text-sm font-medium bg-{{ cobro.estado|color_estado_cobro }}-100 text-{{ cobro.estado|color_estado_cobro }}-700">
+            {{ cobro.get_estado_display }}
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Información del cobro -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Información del cobro</h3>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <p class="text-sm text-slate-500">Paciente</p>
+                    <p class="font-medium text-slate-800">{{ cobro.paciente }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Concepto</p>
+                    <p class="font-medium text-slate-800">{{ cobro.get_concepto_display }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Cita asociada</p>
+                    {% if cobro.cita %}
+                    <p class="font-medium text-slate-800">{{ cobro.cita }}</p>
+                    {% else %}
+                    <p class="text-slate-400">Sin cita asociada</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Fecha de creación</p>
+                    <p class="font-medium text-slate-800">{{ cobro.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <p class="text-sm text-slate-500">Descripción</p>
+                <p class="text-slate-700">{{ cobro.descripcion }}</p>
+            </div>
+
+            {% if cobro.notas %}
+            <div class="mt-4">
+                <p class="text-sm text-slate-500">Notas internas</p>
+                <p class="text-slate-700">{{ cobro.notas }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Montos -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Montos</h3>
+
+            <div class="space-y-4">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Monto base</span>
+                    <span class="font-medium text-slate-800">{{ cobro.monto|formatear_moneda }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">IGV (18%)</span>
+                    <span class="font-medium text-slate-800">{{ cobro.igv|formatear_moneda }}</span>
+                </div>
+                <div class="flex justify-between pt-4 border-t border-slate-200">
+                    <span class="font-semibold text-slate-700">Total</span>
+                    <span class="text-xl font-bold text-slate-800">{{ cobro.total|formatear_moneda }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Comisión plataforma</span>
+                    <span class="text-sm text-slate-500">{{ cobro.comision_plataforma|formatear_moneda }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Monto neto</span>
+                    <span class="font-medium text-emerald-600">{{ cobro.monto_neto|formatear_moneda }}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Información de pago (si está pagado) -->
+    {% if cobro.esta_pagado %}
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">Información de pago</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div>
+                <p class="text-sm text-slate-500">Método de pago</p>
+                <p class="font-medium text-slate-800">
+                    <i data-lucide="{{ cobro.metodo_pago_usado|icono_metodo_pago }}" class="w-4 h-4 inline mr-1"></i>
+                    {{ cobro.get_metodo_pago_usado_display }}
+                </p>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500">Referencia</p>
+                <p class="font-medium text-slate-800">{{ cobro.referencia_pago|default:"-" }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500">Fecha de pago</p>
+                <p class="font-medium text-slate-800">{{ cobro.fecha_pago|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500">Comprobante</p>
+                {% if cobro.comprobante_pago %}
+                <a href="{{ cobro.comprobante_pago.url }}" target="_blank"
+                   class="text-teal-600 hover:text-teal-700 font-medium">
+                    Ver comprobante →
+                </a>
+                {% else %}
+                <p class="text-slate-400">Sin comprobante</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Acciones -->
+    {% if cobro.esta_pendiente %}
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">Registrar pago</h3>
+
+        <form method="POST" action="{% url 'facturacion:cobro_registrar_pago' pk=cobro.pk %}"
+              enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Método de pago *</label>
+                    {{ pago_form.metodo_pago }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Referencia / N° operación</label>
+                    {{ pago_form.referencia }}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Comprobante de pago</label>
+                {{ pago_form.comprobante }}
+                <p class="mt-1 text-xs text-slate-500">Sube una captura del comprobante (Yape, Plin, transferencia)</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Notas</label>
+                {{ pago_form.notas }}
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4">
+                <button type="submit"
+                        class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium">
+                    <i data-lucide="check" class="w-4 h-4 mr-2 inline"></i>
+                    Registrar pago
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Requiere verificación -->
+    {% if cobro.requiere_verificacion %}
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
+        <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+            <i data-lucide="clock" class="w-5 h-5 text-amber-600"></i>
+        </div>
+        <div>
+            <p class="font-medium text-amber-800">Pago pendiente de verificación</p>
+            <p class="text-sm text-amber-600">Se ha subido un comprobante. Verifica el pago y regístralo.</p>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
