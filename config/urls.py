@@ -20,7 +20,7 @@ urlpatterns = [
     # Gestión de pacientes (Parte 2)
     path("pacientes/", include("pacientes.urls")),
     # Agenda de citas (Parte 3)
-    path("", include("citas.urls")),
+    path("", include("agendas.urls")),
     # Planes nutricionales y alimentos (Parte 4)
     path("", include("nutricion.urls")),
     # Seguimiento corporal y notas clínicas (Parte 5)
