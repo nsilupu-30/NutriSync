@@ -1273,13 +1273,27 @@
                     <p class="text-xs text-slate-400 mb-5 leading-relaxed">
                         Prescribe un régimen nutricional personalizado y asigna porciones basadas en la evaluación clínica y requerimientos energéticos del paciente.
                     </p>
-                    <button onclick="comenzarPrimerPlan()" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl px-4 py-2 text-xs transition-all duration-200 shadow-sm flex items-center gap-2">
-                        <i data-lucide="play" class="w-3.5 h-3.5"></i> Prescribir primer plan
-                    </button>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
+                        <button onclick="comenzarPrimerPlan()" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl px-4 py-2.5 text-xs transition-all duration-200 shadow-sm flex items-center justify-center gap-2 flex-1">
+                            <i data-lucide="play" class="w-3.5 h-3.5"></i> Crear desde Cero
+                        </button>
+                        <button onclick="abrirModalAplicarModelo()" class="bg-white border border-slate-350 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl px-4 py-2.5 text-xs transition-all duration-200 shadow-sm flex items-center justify-center gap-2 flex-1">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Aplicar Modelo
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Contenido principal del Plan -->
                 <div id="plan-main-content" class="hidden grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    
+                    <!-- Banner modo lectura -->
+                    <div id="plan-read-only-banner" class="hidden col-span-1 lg:col-span-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 text-amber-800 text-xs">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500 shrink-0"></i>
+                        <div>
+                            <p class="font-bold">Modo de Lectura</p>
+                            <p class="mt-0.5">Estás viendo una versión histórica de este plan alimentario. No puedes realizar cambios directos sobre ella.</p>
+                        </div>
+                    </div>
                     
                     <!-- Columna Izquierda: Parámetros Clínicos de Referencia (Read-Only) -->
                     <div class="lg:col-span-1 space-y-6">
@@ -1640,9 +1654,15 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-                            <button type="button" onclick="closePlanModal('modal-plan-resumen')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl">Cancelar</button>
-                            <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="save-as-new-version-resumen" name="submit_action" value="new_version" class="rounded text-teal-650 focus:ring-teal-500">
+                                <label for="save-as-new-version-resumen" class="text-[11px] text-slate-600 cursor-pointer font-bold">Guardar como nueva versión</label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="closePlanModal('modal-plan-resumen')" class="bg-slate-200 hover:bg-slate-300 text-slate-750 font-bold px-4 py-2 rounded-xl">Cancelar</button>
+                                <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -1703,9 +1723,15 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-                            <button type="button" onclick="closePlanModal('modal-plan-prescripcion')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl">Cancelar</button>
-                            <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="save-as-new-version-prescripcion" name="submit_action" value="new_version" class="rounded text-teal-650 focus:ring-teal-500">
+                                <label for="save-as-new-version-prescripcion" class="text-[11px] text-slate-600 cursor-pointer font-bold">Guardar como nueva versión</label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="closePlanModal('modal-plan-prescripcion')" class="bg-slate-200 hover:bg-slate-300 text-slate-750 font-bold px-4 py-2 rounded-xl">Cancelar</button>
+                                <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -1723,6 +1749,36 @@
                                 <i data-lucide="x" class="w-4 h-4"></i>
                             </button>
                         </div>
+                        <!-- Real-time Macro Validation Panel -->
+                        <div id="comidas-macro-validation" class="mx-6 mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2">
+                            <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
+                                <span class="font-bold text-slate-700">Validación de Calorías y Macros:</span>
+                                <span class="font-semibold text-slate-700" id="validation-kcal-summary">0 / 0 kcal</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                                <div class="bg-white p-2 rounded-lg border border-slate-150">
+                                    <span class="block text-[10px] text-slate-400 font-bold uppercase">Calorías</span>
+                                    <span id="validation-kcal-diff" class="font-bold text-xs text-slate-700">—</span>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-150">
+                                    <span class="block text-[10px] text-blue-400 font-bold uppercase">Proteínas</span>
+                                    <span id="validation-prot-diff" class="font-bold text-xs text-slate-700">—</span>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-150">
+                                    <span class="block text-[10px] text-emerald-400 font-bold uppercase">Carbos</span>
+                                    <span id="validation-carb-diff" class="font-bold text-xs text-slate-700">—</span>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-150">
+                                    <span class="block text-[10px] text-rose-450 font-bold uppercase">Grasas</span>
+                                    <span id="validation-gras-diff" class="font-bold text-xs text-slate-700">—</span>
+                                </div>
+                            </div>
+                            <div class="text-[10px] text-slate-400 pt-1 flex justify-between">
+                                <span id="validation-fibra-summary">Fibra: —</span>
+                                <span id="validation-agua-summary">Agua: —</span>
+                            </div>
+                        </div>
+
                         <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto text-xs" id="modal-comidas-list-container">
                             <!-- Dynamic food lines will be generated here -->
                         </div>
@@ -1731,9 +1787,15 @@
                                 <i data-lucide="plus" class="w-4 h-4"></i> Agregar Comida
                             </button>
                         </div>
-                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-                            <button type="button" onclick="closePlanModal('modal-plan-comidas')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl">Cancelar</button>
-                            <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="save-as-new-version-comidas" name="submit_action" value="new_version" class="rounded text-teal-650 focus:ring-teal-500">
+                                <label for="save-as-new-version-comidas" class="text-[11px] text-slate-600 cursor-pointer font-bold">Guardar como nueva versión</label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="closePlanModal('modal-plan-comidas')" class="bg-slate-200 hover:bg-slate-300 text-slate-750 font-bold px-4 py-2 rounded-xl">Cancelar</button>
+                                <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -1759,9 +1821,15 @@
                                 <i data-lucide="plus" class="w-4 h-4"></i> Agregar Equivalencia
                             </button>
                         </div>
-                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-                            <button type="button" onclick="closePlanModal('modal-plan-sustituciones')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl">Cancelar</button>
-                            <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="save-as-new-version-sustituciones" name="submit_action" value="new_version" class="rounded text-teal-650 focus:ring-teal-500">
+                                <label for="save-as-new-version-sustituciones" class="text-[11px] text-slate-600 cursor-pointer font-bold">Guardar como nueva versión</label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="closePlanModal('modal-plan-sustituciones')" class="bg-slate-200 hover:bg-slate-300 text-slate-750 font-bold px-4 py-2 rounded-xl">Cancelar</button>
+                                <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -1787,9 +1855,15 @@
                                 <i data-lucide="plus" class="w-4 h-4"></i> Agregar Recomendación
                             </button>
                         </div>
-                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-                            <button type="button" onclick="closePlanModal('modal-plan-recomendaciones')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl">Cancelar</button>
-                            <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="save-as-new-version-recomendaciones" name="submit_action" value="new_version" class="rounded text-teal-650 focus:ring-teal-500">
+                                <label for="save-as-new-version-recomendaciones" class="text-[11px] text-slate-600 cursor-pointer font-bold">Guardar como nueva versión</label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="closePlanModal('modal-plan-recomendaciones')" class="bg-slate-200 hover:bg-slate-300 text-slate-750 font-bold px-4 py-2 rounded-xl">Cancelar</button>
+                                <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -1815,11 +1889,46 @@
                                 <i data-lucide="plus" class="w-4 h-4"></i> Agregar Suplemento
                             </button>
                         </div>
-                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-                            <button type="button" onclick="closePlanModal('modal-plan-suplementacion')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl">Cancelar</button>
-                            <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="save-as-new-version-suplementacion" name="submit_action" value="new_version" class="rounded text-teal-650 focus:ring-teal-500">
+                                <label for="save-as-new-version-suplementacion" class="text-[11px] text-slate-600 cursor-pointer font-bold">Guardar como nueva versión</label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="closePlanModal('modal-plan-suplementacion')" class="bg-slate-200 hover:bg-slate-300 text-slate-750 font-bold px-4 py-2 rounded-xl">Cancelar</button>
+                                <button type="submit" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-xl">Guardar Cambios</button>
+                            </div>
                         </div>
                     </form>
+                </div>
+            </div>
+            
+            <!-- Modal: Aplicar Modelo de Plan -->
+            <div id="modal-aplicar-modelo" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <h3 class="text-sm font-extrabold text-slate-700 flex items-center gap-2">
+                            <i data-lucide="copy" class="w-4 h-4 text-teal-650"></i>
+                            Aplicar Modelo de Plan
+                        </h3>
+                        <button type="button" onclick="cerrarModalAplicarModelo()" class="text-slate-400 hover:text-slate-650 transition-colors">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="modelos-search" oninput="filtrarModelosList()" placeholder="Buscar modelo por nombre o tipo de paciente..." class="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                        <div class="max-h-[50vh] overflow-y-auto space-y-3" id="modelos-list-container">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                        <button type="button" onclick="cerrarModalAplicarModelo()" class="text-slate-650 hover:text-slate-800 text-xs font-bold px-4 py-2 bg-slate-100 rounded-xl transition-colors">
+                            Cerrar
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -5672,6 +5781,7 @@
     // ─── JS PARA EL MÓDULO DE PLAN ALIMENTARIO ───
     let activePlan = null;
     let catalogRecetas = [];
+    let catalogModelos = [];
     let activeReferencia = null;
 
     function loadPlanAlimentario(planId = null) {
@@ -5696,6 +5806,7 @@
                 return;
             }
             catalogRecetas = data.recetas || [];
+            catalogModelos = data.modelos || [];
 
             // 1. Populate clinical reference values
             const ref = data.referencia;
@@ -5735,6 +5846,16 @@
                 activePlan = data.plan;
                 if (emptyState) emptyState.classList.add("hidden");
                 if (mainContent) mainContent.classList.remove("hidden");
+
+                // Toggle read-only banner
+                const readOnlyBanner = document.getElementById("plan-read-only-banner");
+                if (readOnlyBanner) {
+                    if (activePlan.estado !== 'Activo' && activePlan.estado !== 'Borrador') {
+                        readOnlyBanner.classList.remove("hidden");
+                    } else {
+                        readOnlyBanner.classList.add("hidden");
+                    }
+                }
 
                 // 3. Populate cards with plan data
                 const plan = data.plan;
@@ -5944,6 +6065,146 @@
         });
     }
 
+    function abrirModalAplicarModelo() {
+        const modal = document.getElementById("modal-aplicar-modelo");
+        if (modal) {
+            modal.classList.remove("hidden");
+            renderModelosList();
+        }
+    }
+
+    function cerrarModalAplicarModelo() {
+        const modal = document.getElementById("modal-aplicar-modelo");
+        if (modal) modal.classList.add("hidden");
+    }
+
+    function renderModelosList(filterText = "") {
+        const container = document.getElementById("modelos-list-container");
+        if (!container) return;
+        container.innerHTML = "";
+        
+        const q = filterText.toLowerCase().trim();
+        const filtered = catalogModelos.filter(m => 
+            m.nombre.toLowerCase().includes(q) || 
+            (m.tipo_paciente && m.tipo_paciente.toLowerCase().includes(q)) || 
+            m.objetivo.toLowerCase().includes(q)
+        );
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No se encontraron modelos de planes activos.</p>`;
+            return;
+        }
+
+        filtered.forEach(m => {
+            const card = document.createElement("div");
+            card.className = "p-4 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100/70 transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs";
+            card.innerHTML = `
+                <div class="space-y-1">
+                    <h4 class="font-bold text-slate-800 text-sm">${m.nombre}</h4>
+                    <p class="text-slate-400">Objetivo: <strong class="text-slate-650">${m.objetivo}</strong> · Paciente: <strong class="text-slate-650">${m.tipo_paciente || 'Cualquiera'}</strong></p>
+                    <div class="flex flex-wrap gap-2 text-[10px] text-slate-500 font-bold uppercase pt-0.5">
+                        <span class="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100">${m.calorias} kcal</span>
+                        <span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">P: ${m.proteinas}g</span>
+                        <span class="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100">C: ${m.carbohidratos}g</span>
+                        <span class="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">G: ${m.grasas}g</span>
+                        <span class="bg-cyan-50 text-cyan-700 px-1.5 py-0.5 rounded border border-cyan-100">Agua: ${m.agua_recomendada}L</span>
+                    </div>
+                </div>
+                <button type="button" onclick="aplicarModeloPlan(${m.id})" class="bg-teal-650 hover:bg-teal-700 text-white font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-3xs">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i> Aplicar
+                </button>
+            `;
+            container.appendChild(card);
+        });
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function filtrarModelosList() {
+        const val = document.getElementById("modelos-search").value;
+        renderModelosList(val);
+    }
+
+    function aplicarModeloPlan(modeloId) {
+        if (!confirm("¿Deseas aplicar este modelo al paciente? Esto creará una copia del modelo y archivará el plan actual.")) return;
+        
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const formData = new FormData();
+        formData.append("csrfmiddlewaretoken", csrfToken);
+        formData.append("modelo_id", modeloId);
+
+        const url = "{% url 'pacientes:plan_aplicar_modelo' paciente.pk %}";
+        fetch(url, {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                cerrarModalAplicarModelo();
+                loadPlanAlimentario(data.plan_id);
+            } else {
+                alert("Error al aplicar el modelo: " + (data.error || "Desconocido"));
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    function actualizarComidasMacroValidation() {
+        if (!activePlan) return;
+        const targetKcal = activePlan.calorias || 0;
+        const targetProt = activePlan.proteinas || 0;
+        const targetCarb = activePlan.carbohidratos || 0;
+        const targetGras = activePlan.grasas || 0;
+        
+        let currentKcal = 0;
+        let currentProt = 0;
+        let currentCarb = 0;
+        let currentGras = 0;
+
+        const selects = document.querySelectorAll('#modal-plan-comidas select[name="comida_receta_id"]');
+        selects.forEach(select => {
+            const recetaId = select.value;
+            if (recetaId) {
+                const receta = catalogRecetas.find(r => r.id.toString() === recetaId.toString());
+                if (receta) {
+                    currentKcal += parseFloat(receta.calorias) || 0;
+                    currentProt += parseFloat(receta.proteinas) || 0;
+                    currentCarb += parseFloat(receta.carbohidratos) || 0;
+                    currentGras += parseFloat(receta.grasas) || 0;
+                }
+            }
+        });
+
+        const diffKcal = currentKcal - targetKcal;
+        const diffProt = currentProt - targetProt;
+        const diffCarb = currentCarb - targetCarb;
+        const diffGras = currentGras - targetGras;
+
+        document.getElementById("validation-kcal-summary").innerText = `${Math.round(currentKcal)} / ${targetKcal} kcal`;
+        
+        const kcalDiffEl = document.getElementById("validation-kcal-diff");
+        kcalDiffEl.innerText = `${diffKcal > 0 ? '+' : ''}${Math.round(diffKcal)} kcal`;
+        kcalDiffEl.className = `font-bold text-xs ${Math.abs(diffKcal) <= 50 ? 'text-emerald-600' : 'text-rose-550'}`;
+
+        const protDiffEl = document.getElementById("validation-prot-diff");
+        protDiffEl.innerText = `${Math.round(currentProt)} / ${targetProt}g`;
+        protDiffEl.className = `font-bold text-xs ${Math.abs(diffProt) <= 5 ? 'text-emerald-600' : 'text-rose-550'}`;
+
+        const carbDiffEl = document.getElementById("validation-carb-diff");
+        carbDiffEl.innerText = `${Math.round(currentCarb)} / ${targetCarb}g`;
+        carbDiffEl.className = `font-bold text-xs ${Math.abs(diffCarb) <= 10 ? 'text-emerald-600' : 'text-rose-550'}`;
+
+        const grasDiffEl = document.getElementById("validation-gras-diff");
+        grasDiffEl.innerText = `${Math.round(currentGras)} / ${targetGras}g`;
+        grasDiffEl.className = `font-bold text-xs ${Math.abs(diffGras) <= 3 ? 'text-emerald-600' : 'text-rose-550'}`;
+
+        document.getElementById("validation-fibra-summary").innerText = `Fibra: ${activePlan.fibra || 0}g`;
+        document.getElementById("validation-agua-summary").innerText = `Agua: ${activePlan.agua_recomendada || 0} L`;
+    }
+
     function comenzarPrimerPlan() {
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const formData = new FormData();
@@ -5976,6 +6237,10 @@
     }
 
     function openPlanModal(modalId) {
+        if (activePlan && activePlan.estado !== 'Activo' && activePlan.estado !== 'Borrador') {
+            alert("⚠️ Estás consultando una versión finalizada o suspendida en modo lectura. No es posible realizar modificaciones.");
+            return;
+        }
         if (!activeReferencia || !activeReferencia.objetivo_principal || activeReferencia.objetivo_principal === "No especificado") {
             alert("⚠️ No puedes crear o editar el Plan Alimentario porque aún no has registrado una Evaluación con Objetivo Nutricional para este paciente.\n\nPor favor, completa primero el módulo de Evaluación.");
             return;
@@ -6007,6 +6272,7 @@
                     agregarComidaRow(c.tipo, c.hora, "", "");
                 });
             }
+            actualizarComidasMacroValidation();
         } else if (modalId === "modal-plan-sustituciones") {
             const container = document.getElementById("modal-sustituciones-container");
             container.innerHTML = "";
@@ -6102,7 +6368,7 @@
             </div>
             <div class="col-span-7">
                 <label class="block font-bold text-slate-500 mb-0.5">Receta Seleccionada</label>
-                <select name="comida_receta_id" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white font-semibold text-slate-700" required>
+                <select name="comida_receta_id" onchange="actualizarComidasMacroValidation()" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white font-semibold text-slate-700" required>
                     ${optionsHtml}
                 </select>
             </div>
@@ -6111,13 +6377,14 @@
                 <input type="text" name="comida_observaciones" value="${observaciones}" placeholder="Ej. Acompañar con abundante agua" class="w-full border border-slate-200 rounded-lg px-2 py-1 outline-none bg-white">
             </div>
             <div class="col-span-1 mt-2 flex items-end justify-center pb-1">
-                <button type="button" onclick="this.closest('div.grid').remove()" class="text-rose-500 hover:text-rose-700 p-1">
+                <button type="button" onclick="this.closest('div.grid').remove(); actualizarComidasMacroValidation();" class="text-rose-500 hover:text-rose-700 p-1">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
         `;
         container.appendChild(div);
         if (typeof lucide !== 'undefined') lucide.createIcons();
+        actualizarComidasMacroValidation();
     }
 
     function agregarSustitucionRow(alimento = "", sustituto = "") {

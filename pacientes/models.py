@@ -440,8 +440,18 @@ class PlanAlimentario(models.Model):
     recomendaciones = models.JSONField(default=list, blank=True)
     suplementacion = models.JSONField(default=list, blank=True)
 
+    version = models.PositiveIntegerField(default=1, verbose_name="Versión")
+    plan_anterior = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='versiones_posteriores',
+        verbose_name="Plan anterior/origen"
+    )
+
     class Meta:
-        ordering = ['-fecha_creacion']
+        ordering = ['-fecha_creacion', '-version']
         verbose_name = "Plan Alimentario Sync"
         verbose_name_plural = "Planes Alimentarios Sync"
 

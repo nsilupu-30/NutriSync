@@ -1186,12 +1186,32 @@ def paciente_plan_get(request, pk):
             "porciones": r.porciones
         })
 
+    # 5. Get available template models
+    from nutricion.models import PlanNutricional
+    modelos_qs = PlanNutricional.objects.filter(nutricionista=request.user, estado='Activo')
+    modelos_list = []
+    for m in modelos_qs:
+        modelos_list.append({
+            "id": m.id,
+            "nombre": m.nombre,
+            "objetivo": m.objetivo,
+            "tipo_paciente": m.tipo_paciente,
+            "calorias": m.calorias_diarias,
+            "proteinas": m.proteinas_g,
+            "carbohidratos": m.carbohidratos_g,
+            "grasas": m.grasas_g,
+            "fibra": m.fibra_g,
+            "agua_recomendada": float(m.agua_recomendada),
+            "num_comidas": m.num_comidas,
+        })
+
     return JsonResponse({
         "success": True,
         "plan": plan_data,
         "referencia": referencia,
         "historial": historial,
-        "recetas": recetas_list
+        "recetas": recetas_list,
+        "modelos": modelos_list
     })
 
 @login_required
@@ -1218,8 +1238,33 @@ def paciente_plan_guardar(request, pk):
             paciente=paciente,
             consulta=consulta,
             nombre="Plan Alimentario Inicial",
-            calorias=2000
+            calorias=2000,
+            version=1
         )
+    else:
+        submit_action = request.POST.get("submit_action")
+        if submit_action == "new_version":
+            # Set all other active plans to Finalizado
+            PlanAlimentario.objects.filter(paciente=paciente, estado='Activo').update(estado='Finalizado')
+            plan = PlanAlimentario.objects.create(
+                paciente=paciente,
+                consulta=consulta,
+                nombre=plan.nombre,
+                tipo_plan=plan.tipo_plan,
+                calorias=plan.calorias,
+                proteinas=plan.proteinas,
+                carbohidratos=plan.carbohidratos,
+                grasas=plan.grasas,
+                fibra=plan.fibra,
+                agua_recomendada=plan.agua_recomendada,
+                estado='Activo',
+                comidas=plan.comidas,
+                sustituciones=plan.sustituciones,
+                recomendaciones=plan.recomendaciones,
+                suplementacion=plan.suplementacion,
+                version=plan.version + 1,
+                plan_anterior=plan
+            )
 
     if section == "prescripcion" or section == "resumen":
         plan.nombre = request.POST.get("nombre", plan.nombre).strip() or "Plan Alimentario"
@@ -1320,7 +1365,7 @@ def paciente_plan_nueva_version(request, pk):
             original.estado = 'Finalizado'
             original.save()
             
-        # Clone
+        # Clone with bumped version
         nuevo = PlanAlimentario.objects.create(
             paciente=paciente,
             consulta=consulta,
@@ -1336,15 +1381,66 @@ def paciente_plan_nueva_version(request, pk):
             comidas=original.comidas,
             sustituciones=original.sustituciones,
             recomendaciones=original.recomendaciones,
-            suplementacion=original.suplementacion
+            suplementacion=original.suplementacion,
+            version=original.version + 1,
+            plan_anterior=original
         )
     else:
         nuevo = PlanAlimentario.objects.create(
             paciente=paciente,
             consulta=consulta,
             nombre="Plan Alimentario Basal",
-            estado='Borrador'
+            estado='Borrador',
+            version=1
         )
+
+    return JsonResponse({"success": True, "plan_id": nuevo.id})
+
+
+@login_required
+@require_POST
+def paciente_plan_aplicar_modelo(request, pk):
+    paciente = get_object_or_404(Paciente, pk=pk, nutricionista=request.user)
+    consulta = get_consulta_context(paciente, request)
+    if not consulta or consulta.estado == 'finalizada':
+        return JsonResponse({"success": False, "error": "No se puede editar una consulta finalizada o inexistente."}, status=400)
+
+    modelo_id = request.POST.get("modelo_id")
+    from nutricion.models import PlanNutricional
+    modelo = get_object_or_404(PlanNutricional, id=modelo_id, nutricionista=request.user)
+
+    # Convert model's ComidaPlan structure to JSON
+    comidas_json = []
+    for c in modelo.comidas.all():
+        comidas_json.append({
+            "tipo": c.tipo_comida,
+            "hora": c.hora_sugerida.strftime("%H:%M") if c.hora_sugerida else "",
+            "receta_id": str(c.receta.id) if c.receta else "",
+            "observaciones": c.observaciones or "",
+        })
+
+    # Archive previous active plan if exists
+    active_plans = PlanAlimentario.objects.filter(paciente=paciente, estado='Activo')
+    for ap in active_plans:
+        ap.estado = 'Finalizado'
+        ap.save()
+
+    # Create new PlanAlimentario based on template
+    nuevo = PlanAlimentario.objects.create(
+        paciente=paciente,
+        consulta=consulta,
+        nombre=f"Plan: {modelo.nombre}",
+        tipo_plan=modelo.tipo_paciente or "Estándar",
+        calorias=modelo.calorias_diarias,
+        proteinas=modelo.proteinas_g,
+        carbohidratos=modelo.carbohidratos_g,
+        grasas=modelo.grasas_g,
+        fibra=modelo.fibra_g,
+        agua_recomendada=modelo.agua_recomendada,
+        comidas=comidas_json,
+        estado='Activo',
+        version=1
+    )
 
     return JsonResponse({"success": True, "plan_id": nuevo.id})
 

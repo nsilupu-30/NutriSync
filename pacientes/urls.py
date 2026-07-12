@@ -21,6 +21,7 @@ urlpatterns = [
     path("<int:pk>/plan/", views.paciente_plan_get, name="plan_get"),
     path("<int:pk>/plan/guardar/", views.paciente_plan_guardar, name="plan_guardar"),
     path("<int:pk>/plan/nueva-version/", views.paciente_plan_nueva_version, name="plan_nueva_version"),
+    path("<int:pk>/plan/aplicar-modelo/", views.paciente_plan_aplicar_modelo, name="plan_aplicar_modelo"),
     path("<int:pk>/plan/duplicar/", views.paciente_plan_duplicar, name="plan_duplicar"),
     path("<int:pk>/plan/eliminar/", views.paciente_plan_eliminar, name="plan_eliminar"),
     path("<int:pk>/plan/enviar/", views.paciente_plan_enviar, name="plan_enviar"),
