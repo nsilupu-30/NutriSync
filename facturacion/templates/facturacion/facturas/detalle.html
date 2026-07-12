@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static %}
+{% load facturacion_tags %}
+
+{% block title %}Factura {{ factura.numero_factura }}{% endblock %}
+{% block page_title %}Factura {{ factura.numero_factura }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <a href="{% url 'facturacion:facturas_lista' %}"
+           class="inline-flex items-center text-sm text-slate-500 hover:text-teal-600 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>
+            Volver a facturas
+        </a>
+        <div class="flex items-center gap-3">
+            <span class="px-3 py-1 rounded-full text-sm font-medium bg-{{ factura.estado|color_estado_factura }}-100 text-{{ factura.estado|color_estado_factura }}-700">
+                {{ factura.get_estado_display }}
+            </span>
+            {% if factura.estado == 'borrador' and factura.items.count > 0 %}
+            <a href="{% url 'facturacion:factura_emitir' pk=factura.pk %}"
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                <i data-lucide="send" class="w-4 h-4 mr-2 inline"></i>
+                Emitir factura
+            </a>
+            {% endif %}
+            {% if factura.archivo_pdf %}
+            <a href="{{ factura.archivo_pdf.url }}" target="_blank"
+               class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
+                <i data-lucide="download" class="w-4 h-4 mr-2 inline"></i>
+                Descargar PDF
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Información de la factura -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <p class="text-sm text-slate-500">N° Factura</p>
+                <p class="text-lg font-bold text-slate-800">{{ factura.numero_factura }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500">Paciente</p>
+                <p class="font-medium text-slate-800">{{ factura.paciente }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500">Nutricionista</p>
+                <p class="font-medium text-slate-800">{{ factura.nutricionista.get_full_name|default:factura.nutricionista.username }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500">Fecha de emisión</p>
+                <p class="font-medium text-slate-800">{{ factura.fecha_emision|date:"d/m/Y" }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500">Fecha de vencimiento</p>
+                <p class="font-medium text-slate-800">{{ factura.fecha_vencimiento|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        {% if factura.notas %}
+        <div class="mt-4 pt-4 border-t border-slate-100">
+            <p class="text-sm text-slate-500">Notas</p>
+            <p class="text-slate-700">{{ factura.notas }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Ítems de la factura -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-800">Ítems de la factura</h3>
+            {% if factura.estado == 'borrador' %}
+            <div class="flex items-center gap-2">
+                <a href="{% url 'facturacion:factura_agregar_item' pk=factura.pk %}"
+                   class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
+                    <i data-lucide="plus" class="w-4 h-4 mr-1 inline"></i>
+                    Agregar ítem
+                </a>
+                <a href="{% url 'facturacion:factura_agregar_cobros' pk=factura.pk %}"
+                   class="px-3 py-1.5 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition-colors text-sm font-medium">
+                    <i data-lucide="link" class="w-4 h-4 mr-1 inline"></i>
+                    Agregar cobros
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if items %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-sm text-slate-500 border-b border-slate-100">
+                        <th class="pb-3 font-medium">Descripción</th>
+                        <th class="pb-3 font-medium text-center">Cantidad</th>
+                        <th class="pb-3 font-medium text-right">Precio Unitario</th>
+                        <th class="pb-3 font-medium text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for item in items %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3 text-sm text-slate-700">
+                            {{ item.descripcion }}
+                            {% if item.cobro %}
+                            <span class="ml-2 px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-xs">
+                                Cobro #{{ item.cobro.pk }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 text-sm text-slate-700 text-center">{{ item.cantidad }}</td>
+                        <td class="py-3 text-sm text-slate-700 text-right">{{ item.precio_unitario|formatear_moneda }}</td>
+                        <td class="py-3 text-sm font-medium text-slate-800 text-right">{{ item.subtotal|formatear_moneda }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="mt-6 pt-4 border-t border-slate-200 flex justify-end">
+            <div class="w-72 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500">Subtotal:</span>
+                    <span class="text-slate-700">{{ factura.subtotal|formatear_moneda }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500">IGV (18%):</span>
+                    <span class="text-slate-700">{{ factura.igv|formatear_moneda }}</span>
+                </div>
+                <div class="flex justify-between text-lg font-bold pt-2 border-t border-slate-200">
+                    <span class="text-slate-700">Total:</span>
+                    <span class="text-slate-800">{{ factura.total|formatear_moneda }}</span>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-8">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="file-plus" class="w-8 h-8 text-slate-400"></i>
+            </div>
+            <p class="text-slate-500">Esta factura no tiene ítems aún.</p>
+            <p class="text-sm text-slate-400 mt-1">Agrega ítems manuales o vincula cobros pendientes.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Registrar pago -->
+    {% if factura.estado == 'emitida' %}
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">Registrar pago de factura</h3>
+
+        <form method="POST" action="{% url 'facturacion:factura_registrar_pago' pk=factura.pk %}"
+              enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Método de pago *</label>
+                    {{ pago_form.metodo_pago }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Referencia / N° operación</label>
+                    {{ pago_form.referencia }}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Comprobante de pago</label>
+                {{ pago_form.comprobante }}
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4">
+                <button type="submit"
+                        class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium">
+                    <i data-lucide="check" class="w-4 h-4 mr-2 inline"></i>
+                    Registrar pago de {{ factura.total|formatear_moneda }}
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Pagos realizados -->
+    {% if factura.pagos.all %}
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">Pagos realizados</h3>
+        <div class="space-y-3">
+            {% for pago in factura.pagos.all %}
+            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="{{ pago.metodo_pago|icono_metodo_pago }}" class="w-5 h-5 text-slate-400"></i>
+                    <div>
+                        <p class="text-sm font-medium text-slate-700">{{ pago.get_metodo_pago_display }}</p>
+                        <p class="text-xs text-slate-500">{{ pago.referencia }}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="font-medium text-slate-800">{{ pago.monto|formatear_moneda }}</p>
+                    <p class="text-xs text-slate-500">{{ pago.fecha_pago|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

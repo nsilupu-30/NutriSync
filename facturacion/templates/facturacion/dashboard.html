@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% load static %}
+{% load facturacion_tags %}
+
+{% block title %}Facturación{% endblock %}
+{% block page_title %}Dashboard de Facturación{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- Tarjetas de resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <!-- Ingresos del mes -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Ingresos del mes</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">{{ ingresos_mes|formatear_moneda }}</p>
+                </div>
+                <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <i data-lucide="banknotes" class="w-6 h-6 text-emerald-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cobros totales del mes -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Cobros totales (mes)</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">{{ total_cobros_mes|formatear_moneda }}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <i data-lucide="receipt" class="w-6 h-6 text-blue-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Facturas emitidas -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Facturas emitidas</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">{{ total_facturas_mes|formatear_moneda }}</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
+                    <i data-lucide="file-text" class="w-6 h-6 text-purple-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagos pendientes -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Pagos pendientes</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">{{ cobros_pendientes }}</p>
+                </div>
+                <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                    <i data-lucide="clock" class="w-6 h-6 text-amber-600"></i>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Alerta de cobros vencidos -->
+    {% if cobros_vencidos > 0 %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-4">
+        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
+        </div>
+        <div>
+            <p class="font-medium text-red-800">Tienes {{ cobros_vencidos }} cobro(s) vencido(s)</p>
+            <p class="text-sm text-red-600">Revisa la sección de cobros para gestionar los pagos pendientes.</p>
+        </div>
+        <a href="{% url 'facturacion:cobros_lista' %}?estado=vencido"
+           class="ml-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            Ver cobros
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Gráfica de ingresos (Chart.js) -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Ingresos últimos 6 meses</h3>
+            <canvas id="ingresosChart" height="120"></canvas>
+        </div>
+
+        <!-- Suscripción actual -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Tu Suscripción</h3>
+            {% if suscripcion %}
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-slate-500">Plan actual</span>
+                    <span class="font-semibold text-slate-800">{{ suscripcion.plan.nombre }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-slate-500">Precio</span>
+                    <span class="font-semibold text-slate-800">{{ suscripcion.precio_aplicado|formatear_moneda }}/{{ suscripcion.tipo_facturacion|truncatechars:1 }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-slate-500">Estado</span>
+                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                        {{ suscripcion.get_estado_display }}
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-slate-500">Próximo vencimiento</span>
+                    <span class="text-sm text-slate-700">{{ suscripcion.fecha_fin|date:"d/m/Y" }}</span>
+                </div>
+                <div class="pt-3">
+                    <a href="{% url 'facturacion:suscripcion_detalle' %}"
+                       class="w-full inline-flex items-center justify-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
+                        Ver detalles
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-6">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="credit-card" class="w-8 h-8 text-slate-400"></i>
+                </div>
+                <p class="text-slate-500 mb-3">No tienes una suscripción activa</p>
+                <a href="{% url 'facturacion:suscripcion_cambiar' %}"
+                   class="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+                    <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                    Elegir plan
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Últimos cobros -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-800">Últimos cobros</h3>
+            <a href="{% url 'facturacion:cobros_lista' %}"
+               class="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                Ver todos →
+            </a>
+        </div>
+
+        {% if ultimos_cobros %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-sm text-slate-500 border-b border-slate-100">
+                        <th class="pb-3 font-medium">ID</th>
+                        <th class="pb-3 font-medium">Paciente</th>
+                        <th class="pb-3 font-medium">Concepto</th>
+                        <th class="pb-3 font-medium">Total</th>
+                        <th class="pb-3 font-medium">Estado</th>
+                        <th class="pb-3 font-medium">Fecha</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for cobro in ultimos_cobros %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3">
+                            <a href="{% url 'facturacion:cobro_detalle' pk=cobro.pk %}"
+                               class="text-teal-600 hover:text-teal-700 font-medium">
+                                #{{ cobro.pk }}
+                            </a>
+                        </td>
+                        <td class="py-3 text-sm text-slate-700">{{ cobro.paciente }}</td>
+                        <td class="py-3 text-sm text-slate-700">{{ cobro.get_concepto_display }}</td>
+                        <td class="py-3 text-sm font-medium text-slate-800">{{ cobro.total|formatear_moneda }}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium bg-{{ cobro.estado|color_estado_cobro }}-100 text-{{ cobro.estado|color_estado_cobro }}-700">
+                                {{ cobro.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-sm text-slate-500">{{ cobro.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="receipt" class="w-8 h-8 text-slate-400"></i>
+            </div>
+            <p class="text-slate-500">No hay cobros registrados aún.</p>
+            <a href="{% url 'facturacion:cobro_crear' %}"
+               class="inline-flex items-center mt-3 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+                <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                Crear primer cobro
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfica de ingresos mensuales
+    const ctx = document.getElementById('ingresosChart').getContext('2d');
+    const datos = {{ meses_ingresos|safe }};
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: datos.map(d => d.mes),
+            datasets: [{
+                label: 'Ingresos (S/)',
+                data: datos.map(d => d.ingreso),
+                backgroundColor: 'rgba(20, 184, 166, 0.8)',
+                borderColor: 'rgb(20, 184, 166)',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'S/ ' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

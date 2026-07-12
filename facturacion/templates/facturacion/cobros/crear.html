@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nuevo Cobro{% endblock %}
+{% block page_title %}Crear Nuevo Cobro{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+    <!-- Encabezado -->
+    <div class="mb-6">
+        <a href="{% url 'facturacion:cobros_lista' %}"
+           class="inline-flex items-center text-sm text-slate-500 hover:text-teal-600 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>
+            Volver a cobros
+        </a>
+    </div>
+
+    <!-- Formulario -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-6">Datos del cobro</h3>
+
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Paciente y Cita -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Paciente *</label>
+                    {{ form.paciente }}
+                    {% if form.paciente.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.paciente.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Cita asociada (opcional)</label>
+                    {{ form.cita }}
+                    {% if form.cita.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.cita.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Concepto y Monto -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Concepto *</label>
+                    {{ form.concepto }}
+                    {% if form.concepto.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.concepto.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Monto (S/) *</label>
+                    {{ form.monto }}
+                    {% if form.monto.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.monto.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Descripción -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Descripción *</label>
+                {{ form.descripcion }}
+                {% if form.descripcion.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.descripcion.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Notas -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Notas internas</label>
+                {{ form.notas }}
+            </div>
+
+            <!-- Vista previa de montos -->
+            <div class="bg-slate-50 rounded-lg p-4">
+                <h4 class="text-sm font-medium text-slate-700 mb-3">Resumen del cobro</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Monto base:</span>
+                        <span id="monto-display" class="text-slate-700">S/ 0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">IGV (18%):</span>
+                        <span id="igv-display" class="text-slate-700">S/ 0.00</span>
+                    </div>
+                    <div class="flex justify-between pt-2 border-t border-slate-200">
+                        <span class="font-medium text-slate-700">Total a cobrar:</span>
+                        <span id="total-display" class="font-bold text-slate-800">S/ 0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex items-center justify-end gap-3 pt-4">
+                <a href="{% url 'facturacion:cobros_lista' %}"
+                   class="px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors text-sm font-medium">
+                    Cancelar
+                </a>
+                <button type="submit"
+                        class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+                    <i data-lucide="save" class="w-4 h-4 mr-2 inline"></i>
+                    Crear cobro
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Cálculo en tiempo real de IGV
+    const montoInput = document.querySelector('#id_monto');
+    const montoDisplay = document.getElementById('monto-display');
+    const igvDisplay = document.getElementById('igv-display');
+    const totalDisplay = document.getElementById('total-display');
+
+    function calcularMontos() {
+        const monto = parseFloat(montoInput.value) || 0;
+        const igv = monto * 0.18;
+        const total = monto + igv;
+
+        montoDisplay.textContent = 'S/ ' + monto.toFixed(2);
+        igvDisplay.textContent = 'S/ ' + igv.toFixed(2);
+        totalDisplay.textContent = 'S/ ' + total.toFixed(2);
+    }
+
+    montoInput.addEventListener('input', calcularMontos);
+    calcularMontos();
+</script>
+{% endblock %}

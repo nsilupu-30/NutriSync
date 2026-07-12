@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% load static %}
+{% load facturacion_tags %}
+
+{% block title %}Reporte de Ingresos{% endblock %}
+{% block page_title %}Reporte de Ingresos{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <p class="text-slate-500">Análisis detallado de tus ingresos y pagos recibidos.</p>
+        <a href="{% url 'facturacion:ingresos_exportar_csv' %}?fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}"
+           class="inline-flex items-center justify-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
+            <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+            Exportar CSV
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <input type="date"
+                   name="fecha_desde"
+                   value="{{ fecha_desde }}"
+                   class="form-input rounded-lg border-slate-300 text-sm"
+                   placeholder="Fecha desde">
+
+            <input type="date"
+                   name="fecha_hasta"
+                   value="{{ fecha_hasta }}"
+                   class="form-input rounded-lg border-slate-300 text-sm"
+                   placeholder="Fecha hasta">
+
+            <input type="text"
+                   name="paciente"
+                   placeholder="Nombre del paciente..."
+                   value="{{ paciente_filtro }}"
+                   class="form-input rounded-lg border-slate-300 text-sm">
+
+            <select name="concepto" class="form-select rounded-lg border-slate-300 text-sm">
+                <option value="">Todos los conceptos</option>
+                {% for valor, texto in conceptos_cobro %}
+                <option value="{{ valor }}" {% if concepto_filtro == valor %}selected{% endif %}>{{ texto }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit"
+                    class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
+                Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Resumen -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Ingresos totales</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">{{ total_ingresos|formatear_moneda }}</p>
+                </div>
+                <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <i data-lucide="banknotes" class="w-6 h-6 text-emerald-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Comisiones</p>
+                    <p class="text-2xl font-bold text-red-600 mt-1">{{ total_comisiones|formatear_moneda }}</p>
+                </div>
+                <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center">
+                    <i data-lucide="percent" class="w-6 h-6 text-red-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Monto neto recibido</p>
+                    <p class="text-2xl font-bold text-teal-600 mt-1">{{ total_neto|formatear_moneda }}</p>
+                </div>
+                <div class="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-6 h-6 text-teal-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Ingresos mensuales -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Ingresos mensuales</h3>
+            <canvas id="ingresosMensualesChart" height="150"></canvas>
+        </div>
+
+        <!-- Ingresos por método de pago -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Por método de pago</h3>
+            <canvas id="metodoPagoChart" height="150"></canvas>
+        </div>
+
+    </div>
+
+    <!-- Desglose por paciente -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">Top pacientes por ingresos</h3>
+
+        {% if ingresos_por_paciente %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-sm text-slate-500 border-b border-slate-100">
+                        <th class="pb-3 font-medium">Paciente</th>
+                        <th class="pb-3 font-medium text-right">Pagos</th>
+                        <th class="pb-3 font-medium text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for item in ingresos_por_paciente %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3 text-sm text-slate-700">
+                            {{ item.cobro__paciente__nombre }} {{ item.cobro__paciente__apellido }}
+                        </td>
+                        <td class="py-3 text-sm text-slate-500 text-right">{{ item.cantidad }}</td>
+                        <td class="py-3 text-sm font-medium text-slate-800 text-right">{{ item.total|formatear_moneda }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-slate-500 text-center py-4">No hay datos para el período seleccionado.</p>
+        {% endif %}
+    </div>
+
+    <!-- Últimos pagos -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">Últimos pagos recibidos</h3>
+
+        {% if pagos %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-sm text-slate-500 border-b border-slate-100">
+                        <th class="pb-3 font-medium">Fecha</th>
+                        <th class="pb-3 font-medium">Paciente</th>
+                        <th class="pb-3 font-medium">Método</th>
+                        <th class="pb-3 font-medium">Referencia</th>
+                        <th class="pb-3 font-medium text-right">Monto</th>
+                        <th class="pb-3 font-medium text-right">Comisión</th>
+                        <th class="pb-3 font-medium text-right">Neto</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for pago in pagos %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3 text-sm text-slate-700">{{ pago.fecha_pago|date:"d/m/Y H:i" }}</td>
+                        <td class="py-3 text-sm text-slate-700">
+                            {% if pago.cobro %}
+                            {{ pago.cobro.paciente }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="py-3 text-sm text-slate-700">
+                            <i data-lucide="{{ pago.metodo_pago|icono_metodo_pago }}" class="w-4 h-4 inline mr-1"></i>
+                            {{ pago.get_metodo_pago_display }}
+                        </td>
+                        <td class="py-3 text-sm text-slate-500">{{ pago.referencia|truncatechars:20 }}</td>
+                        <td class="py-3 text-sm font-medium text-slate-800 text-right">{{ pago.monto|formatear_moneda }}</td>
+                        <td class="py-3 text-sm text-red-500 text-right">{{ pago.comision_stripe|formatear_moneda }}</td>
+                        <td class="py-3 text-sm font-medium text-emerald-600 text-right">{{ pago.monto_neto|formatear_moneda }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-slate-500 text-center py-4">No hay pagos para el período seleccionado.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfica de ingresos mensuales
+    const ctxMensuales = document.getElementById('ingresosMensualesChart').getContext('2d');
+    const datosMensuales = {{ ingresos_mensuales|safe }};
+
+    new Chart(ctxMensuales, {
+        type: 'line',
+        data: {
+            labels: datosMensuales.map(d => d.mes),
+            datasets: [{
+                label: 'Ingresos (S/)',
+                data: datosMensuales.map(d => d.total),
+                borderColor: 'rgb(20, 184, 166)',
+                backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: v => 'S/ ' + v.toLocaleString() }
+                }
+            }
+        }
+    });
+
+    // Gráfica de métodos de pago
+    const ctxMetodo = document.getElementById('metodoPagoChart').getContext('2d');
+    const datosMetodo = {{ ingresos_por_metodo|safe }};
+
+    new Chart(ctxMetodo, {
+        type: 'doughnut',
+        data: {
+            labels: datosMetodo.map(d => d.metodo_pago),
+            datasets: [{
+                data: datosMetodo.map(d => d.total),
+                backgroundColor: [
+                    '#14b8a6', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load static %}
+{% load facturacion_tags %}
+
+{% block title %}Cobros{% endblock %}
+{% block page_title %}Cobros a Pacientes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <p class="text-slate-500">Gestiona los cobros a tus pacientes.</p>
+        <a href="{% url 'facturacion:cobro_crear' %}"
+           class="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+            Nuevo cobro
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <input type="text"
+                   name="paciente"
+                   placeholder="Nombre del paciente..."
+                   value="{{ filtro_form.paciente }}"
+                   class="form-input rounded-lg border-slate-300 text-sm">
+
+            <select name="estado" class="form-select rounded-lg border-slate-300 text-sm">
+                <option value="">Todos los estados</option>
+                {% for valor, texto in estados_cobro %}
+                <option value="{{ valor }}" {% if filtro_form.estado == valor %}selected{% endif %}>{{ texto }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="concepto" class="form-select rounded-lg border-slate-300 text-sm">
+                <option value="">Todos los conceptos</option>
+                {% for valor, texto in conceptos_cobro %}
+                <option value="{{ valor }}" {% if filtro_form.concepto == valor %}selected{% endif %}>{{ texto }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="metodo" class="form-select rounded-lg border-slate-300 text-sm">
+                <option value="">Todos los métodos</option>
+                {% for valor, texto in metodos_pago %}
+                <option value="{{ valor }}" {% if filtro_form.metodo == valor %}selected{% endif %}>{{ texto }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit"
+                    class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
+                Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Tabla de cobros -->
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {% if cobros %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-sm text-slate-500 bg-slate-50 border-b border-slate-100">
+                        <th class="px-6 py-3 font-medium">ID</th>
+                        <th class="px-6 py-3 font-medium">Paciente</th>
+                        <th class="px-6 py-3 font-medium">Concepto</th>
+                        <th class="px-6 py-3 font-medium">Monto</th>
+                        <th class="px-6 py-3 font-medium">IGV</th>
+                        <th class="px-6 py-3 font-medium">Total</th>
+                        <th class="px-6 py-3 font-medium">Estado</th>
+                        <th class="px-6 py-3 font-medium">Método</th>
+                        <th class="px-6 py-3 font-medium">Fecha</th>
+                        <th class="px-6 py-3 font-medium">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for cobro in cobros %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <a href="{% url 'facturacion:cobro_detalle' pk=cobro.pk %}"
+                               class="text-teal-600 hover:text-teal-700 font-medium">
+                                #{{ cobro.pk }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ cobro.paciente }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ cobro.get_concepto_display }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ cobro.monto|formatear_moneda }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-500">{{ cobro.igv|formatear_moneda }}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-slate-800">{{ cobro.total|formatear_moneda }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium bg-{{ cobro.estado|color_estado_cobro }}-100 text-{{ cobro.estado|color_estado_cobro }}-700">
+                                {{ cobro.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-700">
+                            {% if cobro.metodo_pago_usado %}
+                            <i data-lucide="{{ cobro.metodo_pago_usado|icono_metodo_pago }}" class="w-4 h-4 inline"></i>
+                            {{ cobro.get_metodo_pago_usado_display }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-500">{{ cobro.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td class="px-6 py-4">
+                            <a href="{% url 'facturacion:cobro_detalle' pk=cobro.pk %}"
+                               class="text-slate-400 hover:text-teal-600 transition-colors">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+            <p class="text-sm text-slate-500">
+                Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }}
+            </p>
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}"
+                   class="px-3 py-1 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">
+                    ← Anterior
+                </a>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                <a href="?page={{ num }}"
+                   class="px-3 py-1 rounded-lg text-sm {% if page_obj.number == num %}bg-teal-600 text-white{% else %}border border-slate-200 text-slate-600 hover:bg-slate-50{% endif %}">
+                    {{ num }}
+                </a>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}"
+                   class="px-3 py-1 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">
+                    Siguiente →
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-12">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="receipt" class="w-8 h-8 text-slate-400"></i>
+            </div>
+            <p class="text-slate-500">No se encontraron cobros con los filtros aplicados.</p>
+            <a href="{% url 'facturacion:cobro_crear' %}"
+               class="inline-flex items-center mt-3 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
+                <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                Crear nuevo cobro
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

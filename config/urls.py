@@ -27,6 +27,8 @@ urlpatterns = [
     path("seguimiento/", include("seguimiento.urls")),
     # Reportes clínicos, operativos y financieros
     path("reportes/", include("reportes.urls")),
+    # Facturación, cobros y suscripciones
+    path("facturacion/", include("facturacion.urls")),
 ]
 
 if settings.DEBUG:
