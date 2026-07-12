@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import date, timedelta
 from pacientes.models import Paciente
-from citas.models import Cita
+from agendas.models import Cita
 from seguimiento.models import MedidaCorporal, Recomendacion
 from . import utils
 import json

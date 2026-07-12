@@ -212,7 +212,7 @@ class PacienteDetailView(NutricionistaPacienteMixin, DetailView):
 
         # ─── Próxima Cita Programada ───
         try:
-            from citas.models import Cita
+            from agendas.models import Cita
             context['proxima_cita'] = Cita.objects.filter(
                 paciente=paciente,
                 estado='programada'
@@ -318,7 +318,7 @@ def paciente_consulta_iniciar(request, pk):
     from django.utils import timezone
     from pacientes.models import Consulta, PlanAlimentario
     from seguimiento.models import Recomendacion
-    from citas.models import Cita
+    from agendas.models import Cita
     from config.choices import EstadoCita
 
     paciente = get_object_or_404(Paciente, pk=pk, nutricionista=request.user)
@@ -430,7 +430,7 @@ def paciente_consulta_finalizar(request, pk, consulta_id):
     from django.http import JsonResponse
     from django.utils import timezone
     from pacientes.models import Consulta
-    from citas.models import Cita
+    from agendas.models import Cita
     from config.choices import EstadoCita
 
     paciente = get_object_or_404(Paciente, pk=pk, nutricionista=request.user)
