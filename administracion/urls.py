@@ -2,7 +2,7 @@
 # Rutas del panel de administración.
 
 from django.urls import path
-from administracion.views import auth, dashboard
+from administracion.views import auth, dashboard, users
 
 app_name = "administracion"
 
@@ -11,5 +11,10 @@ urlpatterns = [
     path("register/", auth.admin_register_view, name="register"),
     path("logout/",   auth.admin_logout_view,   name="logout"),
     path("",          dashboard.dashboard_view, name="dashboard"),
+
+    # Nutricionistas
+    path("usuarios/",             users.usuarios_lista_view,   name="usuarios_lista"),
+    path("usuarios/<int:pk>/",    users.usuario_detalle_view,  name="usuario_detalle"),
+    path("usuarios/<int:pk>/estado/", users.usuario_toggle_estado, name="usuario_toggle_estado"),
 ]
 
