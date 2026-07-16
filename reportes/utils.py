@@ -307,3 +307,27 @@ def calcular_productividad(nutricionista, fecha_inicio=None, fecha_fin=None):
         'no_asistio': no_asistio,
         'promedio_diario': promedio_diario,
     }
+
+
+def calcular_ingresos_estimados(nutricionista, fecha_inicio=None, fecha_fin=None):
+    from agendas.models import Cita
+    
+    queryset = Cita.objects.filter(
+        Q(paciente__nutricionista=nutricionista) | Q(nutricionista=nutricionista),
+        estado='programada'
+    )
+    
+    if fecha_inicio:
+        queryset = queryset.filter(fecha_hora__date__gte=fecha_inicio)
+    if fecha_fin:
+        queryset = queryset.filter(fecha_hora__date__lte=fecha_fin)
+        
+    total = queryset.aggregate(total=Sum('costo'))['total'] or Decimal('0')
+    cantidad = queryset.count()
+    promedio = round(total / cantidad, 2) if cantidad > 0 else Decimal('0')
+    
+    return {
+        'total': float(total),
+        'cantidad': cantidad,
+        'promedio': float(promedio),
+    }
