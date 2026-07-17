@@ -57,8 +57,7 @@
                             <div>
                                 <span
                                     class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sexo</span>
-                                <span class="font-semibold text-slate-700">{{ paciente.get_sexo_display|default:"—"
-                                    }}</span>
+                                <span class="font-semibold text-slate-700">{{ paciente.get_sexo_display|default:"—" }}</span>
                             </div>
                         </div>
 
@@ -88,8 +87,7 @@
                             <div>
                                 <span
                                     class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Email</span>
-                                <span class="font-semibold text-slate-700" title="{{ paciente.email }}">{{
-                                    paciente.email|default:"—" }}</span>
+                                <span class="font-semibold text-slate-700" title="{{ paciente.email }}">{{ paciente.email|default:"—" }}</span>
                             </div>
                         </div>
 
@@ -99,8 +97,7 @@
                             <div>
                                 <span
                                     class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Dirección</span>
-                                <span class="font-semibold text-slate-700" title="{{ paciente.direccion }}">{{
-                                    paciente.direccion|default:"—" }}</span>
+                                <span class="font-semibold text-slate-700" title="{{ paciente.direccion }}">{{ paciente.direccion|default:"—" }}</span>
                             </div>
                         </div>
 
@@ -190,13 +187,11 @@
                     {% endif %}
                 </div>
                 <p class="text-xs text-slate-500 mt-1">
-                    Iniciada: {{ active_consulta.fecha|date:"d/m/Y" }} a las {{ active_consulta.hora_inicio|time:"H:i"
-                    }}
+                    Iniciada: {{ active_consulta.fecha|date:"d/m/Y" }} a las {{ active_consulta.hora_inicio|time:"H:i" }}
                     {% if active_consulta.hora_fin %}
                     | Finalizada: {{ active_consulta.hora_fin|time:"H:i" }}
                     {% endif %}
-                    | Profesional: {{
-                    active_consulta.profesional.get_full_name|default:active_consulta.profesional.username }}
+                    | Profesional: {{ active_consulta.profesional.get_full_name|default:active_consulta.profesional.username }}
                 </p>
                 {% else %}
                 <span class="text-sm font-bold text-slate-700">Sin consultas registradas</span>
@@ -216,8 +211,7 @@
                     class="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white text-slate-700 outline-none focus:border-teal-500 min-w-[200px]">
                     {% for c in consultas %}
                     <option value="{{ c.id }}" {% if c.id == active_consulta.id %}selected{% endif %}>
-                        Consulta #{{ c.numero_consulta }} ({{ c.fecha|date:"d/m/Y" }}) - {{ c.get_tipo_display }} [{{
-                        c.get_estado_display }}]
+                        Consulta #{{ c.numero_consulta }} ({{ c.fecha|date:"d/m/Y" }}) - {{ c.get_tipo_display }} [{{ c.get_estado_display }}]
                     </option>
                     {% endfor %}
                 </select>
@@ -282,8 +276,7 @@
             </div>
             <div>
                 <h3 id="header-objetivo-principal" class="text-sm font-bold text-slate-700 line-clamp-2 leading-tight">
-                    {{ paciente.informacion_clinica.objetivo_principal|default:motivo_consulta|default:"Pérdida de peso"
-                    }}
+                    {{ paciente.informacion_clinica.objetivo_principal|default:motivo_consulta|default:"Pérdida de peso" }}
                 </h3>
                 <span class="text-[10px] text-slate-400 mt-1 block">Meta del tratamiento</span>
             </div>
@@ -418,14 +411,12 @@
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Sexo
                                         Biológico</span>
-                                    <span class="font-semibold text-slate-800">{{ paciente.get_sexo_display|default:"—"
-                                        }}</span>
+                                    <span class="font-semibold text-slate-800">{{ paciente.get_sexo_display|default:"—" }}</span>
                                 </div>
                                 <div>
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Ocupación</span>
-                                    <span class="font-semibold text-slate-800">{{ paciente.ocupacion|default:"—"
-                                        }}</span>
+                                    <span class="font-semibold text-slate-800">{{ paciente.ocupacion|default:"—" }}</span>
                                 </div>
                             </div>
                         </div>
@@ -465,15 +456,13 @@
                                 <div>
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Teléfono</span>
-                                    <span class="font-semibold text-slate-800">{{ paciente.telefono|default:"—"
-                                        }}</span>
+                                    <span class="font-semibold text-slate-800">{{ paciente.telefono|default:"—" }}</span>
                                 </div>
                                 <div>
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Correo
                                         Electrónico</span>
-                                    <span class="font-semibold text-slate-800 truncate block max-w-[160px]">{{
-                                        paciente.email|default:"—" }}</span>
+                                    <span class="font-semibold text-slate-800 truncate block max-w-[160px]">{{ paciente.email|default:"—" }}</span>
                                 </div>
                                 <div class="col-span-2">
                                     <span
@@ -481,10 +470,7 @@
                                         de Emergencia</span>
                                     <span class="font-semibold text-slate-800">
                                         {% if paciente.informacion_clinica.contacto_emergencia %}
-                                        {{ paciente.informacion_clinica.contacto_emergencia }} ({{
-                                        paciente.informacion_clinica.relacion_contacto|default:"Relación no
-                                        especificada" }}) · {{
-                                        paciente.informacion_clinica.telefono_emergencia|default:"—" }}
+                                        {{ paciente.informacion_clinica.contacto_emergencia }} ({{ paciente.informacion_clinica.relacion_contacto|default:"Relación no especificada" }}) · {{ paciente.informacion_clinica.telefono_emergencia|default:"—" }}
                                         {% else %}
                                         —
                                         {% endif %}
@@ -568,8 +554,7 @@
                                         <span
                                             class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Medicación/Suplementos</span>
                                         <span class="font-semibold text-slate-800">
-                                            {{ paciente.informacion_clinica.medicacion_suplementacion|length|default:"0"
-                                            }} activos
+                                            {{ paciente.informacion_clinica.medicacion_suplementacion|length|default:"0" }} activos
                                         </span>
                                     </div>
                                 </div>
@@ -622,29 +607,25 @@
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Sueño</span>
                                     <span class="font-semibold text-slate-800">
-                                        {{ paciente.informacion_clinica.habitos.sueno_horas|default:"—" }} h/noche ({{
-                                        paciente.informacion_clinica.habitos.sueno_calidad|default:"—" }})
+                                        {{ paciente.informacion_clinica.habitos.sueno_horas|default:"—" }} h/noche ({{ paciente.informacion_clinica.habitos.sueno_calidad|default:"—" }})
                                     </span>
                                 </div>
                                 <div>
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Actividad
                                         Física</span>
-                                    <span class="font-semibold text-slate-800">{{
-                                        paciente.informacion_clinica.habitos.actividad_fisica|default:"—" }}</span>
+                                    <span class="font-semibold text-slate-800">{{ paciente.informacion_clinica.habitos.actividad_fisica|default:"—" }}</span>
                                 </div>
                                 <div>
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Estrés
                                         (1-10)</span>
-                                    <span class="font-semibold text-slate-800">{{
-                                        paciente.informacion_clinica.habitos.estres|default:"—" }}/10</span>
+                                    <span class="font-semibold text-slate-800">{{ paciente.informacion_clinica.habitos.estres|default:"—" }}/10</span>
                                 </div>
                                 <div>
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Hidratación</span>
-                                    <span class="font-semibold text-slate-800">{{
-                                        paciente.informacion_clinica.habitos.hidratacion|default:"—" }} L/día</span>
+                                    <span class="font-semibold text-slate-800">{{ paciente.informacion_clinica.habitos.hidratacion|default:"—" }} L/día</span>
                                 </div>
                             </div>
                         </div>
@@ -685,16 +666,13 @@
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">N°
                                         Comidas</span>
-                                    <span class="font-semibold text-slate-800">{{
-                                        paciente.informacion_clinica.historia_alimentaria.num_comidas|default:"—"
-                                        }}</span>
+                                    <span class="font-semibold text-slate-800">{{ paciente.informacion_clinica.historia_alimentaria.num_comidas|default:"—" }}</span>
                                 </div>
                                 <div>
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Consumo
                                         de Agua</span>
-                                    <span class="font-semibold text-slate-800">{{
-                                        paciente.informacion_clinica.historia_alimentaria.agua|default:"—" }}
+                                    <span class="font-semibold text-slate-800">{{ paciente.informacion_clinica.historia_alimentaria.agua|default:"—" }}
                                         L/día</span>
                                 </div>
                                 <div>
@@ -713,9 +691,7 @@
                                     <span
                                         class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Preferencias</span>
                                     <span class="font-semibold text-slate-800 truncate block max-w-[150px]"
-                                        title="{{ paciente.informacion_clinica.historia_alimentaria.preferencias }}">{{
-                                        paciente.informacion_clinica.historia_alimentaria.preferencias|default:"—"
-                                        }}</span>
+                                        title="{{ paciente.informacion_clinica.historia_alimentaria.preferencias }}">{{ paciente.informacion_clinica.historia_alimentaria.preferencias|default:"—" }}</span>
                                 </div>
                             </div>
                         </div>
@@ -1949,9 +1925,7 @@
                                     <i data-lucide="info" class="w-4 h-4 text-teal-650"></i>
                                     Cita programada encontrada
                                 </p>
-                                <p>Existe una cita programada para este paciente el día <strong>{{
-                                        proxima_cita.fecha_hora|date:"d/m/Y a las H:i" }}</strong> (Motivo: {{
-                                    proxima_cita.motivo|default:"General" }}).</p>
+                                <p>Existe una cita programada para este paciente el día <strong>{{ proxima_cita.fecha_hora|date:"d/m/Y a las H:i" }}</strong> (Motivo: {{ proxima_cita.motivo|default:"General" }}).</p>
 
                                 <div class="flex items-center gap-2 mt-2">
                                     <input type="checkbox" id="vincular-cita-check" name="vincular_cita" value="true"
@@ -4339,8 +4313,7 @@
                     <div class="col-span-2">
                         <label class="block text-xs font-bold text-slate-450 uppercase mb-1 flex justify-between">
                             <span>Nivel de Estrés Percibido</span>
-                            <span id="estres-val" class="font-bold text-teal-600">{{
-                                paciente.informacion_clinica.habitos.estres|default:5 }}/10</span>
+                            <span id="estres-val" class="font-bold text-teal-600">{{ paciente.informacion_clinica.habitos.estres|default:5 }}/10</span>
                         </label>
                         <input type="range" name="estres" min="1" max="10"
                             value="{{ paciente.informacion_clinica.habitos.estres|default:5 }}"
