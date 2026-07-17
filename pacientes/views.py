@@ -348,12 +348,30 @@ def paciente_consulta_iniciar(request, pk):
 
     # Cita relacionada
     cita = None
-    if cita_id and cita_id != "null" and cita_id != "undefined":
+    vincular_cita = request.POST.get("vincular_cita") == "true"
+    
+    if vincular_cita and cita_id and cita_id != "null" and cita_id != "undefined":
+        from django.core.exceptions import ValidationError
         try:
             cita = Cita.objects.filter(paciente=paciente, id=int(cita_id)).first()
             if cita:
+                cita.fecha_hora = timezone.now()
                 cita.estado = EstadoCita.EN_CONSULTA
-                cita.save()
+                try:
+                    cita.save()
+                except ValidationError as e:
+                    error_msg = "No se puede iniciar la consulta en este momento: "
+                    if hasattr(e, "message_dict"):
+                        error_msgs = []
+                        for field, msgs in e.message_dict.items():
+                            error_msgs.extend(msgs)
+                        error_msg += " ".join(error_msgs)
+                    else:
+                        error_msg += str(e)
+                    return JsonResponse({
+                        "success": False,
+                        "error": error_msg
+                    })
         except ValueError:
             pass
 

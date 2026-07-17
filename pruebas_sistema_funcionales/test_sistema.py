@@ -233,6 +233,92 @@ class PruebasSistemaFuncionales(TestCase):
         self.assertIn("inalterable", context.exception.message_dict["estado"][0])
 
     # --------------------------------------------------------------------------
+    # UT-11-03: Adelanto y Vinculación de Cita Programada (Exitoso)
+    # --------------------------------------------------------------------------
+    def test_ut_11_03_adelanto_vincular_cita_exitoso(self):
+        """Valida que se pueda adelantar e iniciar una cita programada futura actualizando su fecha y hora a 'ahora'."""
+        self.client.force_login(self.nutricionista_1)
+        
+        # 1. Crear una cita programada futura
+        fecha_futura = timezone.now() + timedelta(days=3)
+        cita = Cita.objects.create(
+            paciente=self.paciente_1,
+            nutricionista=self.nutricionista_1,
+            fecha_hora=fecha_futura,
+            duracion_minutos=45,
+            motivo="Consulta de control futura",
+            estado=EstadoCita.PROGRAMADA
+        )
+        
+        # 2. Enviar petición para iniciar consulta vinculando y adelantando la cita
+        from django.urls import reverse
+        url = reverse("pacientes:consulta_iniciar", args=[self.paciente_1.pk])
+        response = self.client.post(url, {
+            "tipo": "control",
+            "cita_id": str(cita.id),
+            "vincular_cita": "true"
+        }, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        
+        # 3. Verificar que la cita fue actualizada
+        cita_actualizada = Cita.objects.get(pk=cita.pk)
+        self.assertEqual(cita_actualizada.estado, EstadoCita.EN_CONSULTA)
+        # La fecha y hora de la cita debe estar cerca del momento actual (menos de 5 segundos de diferencia)
+        self.assertLess((timezone.now() - cita_actualizada.fecha_hora).total_seconds(), 5)
+
+    # --------------------------------------------------------------------------
+    # UT-11-04: Adelanto y Vinculación de Cita Programada (Con Solapamiento)
+    # --------------------------------------------------------------------------
+    def test_ut_11_04_adelanto_vincular_cita_con_solapamiento(self):
+        """Valida que falle el adelanto de una cita si interfiere con otra cita agendada en la hora actual."""
+        self.client.force_login(self.nutricionista_1)
+        
+        # 1. Crear una cita activa justo HOY a esta misma hora (cruce)
+        # Hacemos que empiece 10 minutos en el futuro y dure 45 minutos (cruzando el momento actual de la petición)
+        hora_cruce = timezone.now() + timedelta(minutes=10)
+        cita_existente = Cita.objects.create(
+            paciente=self.paciente_sin_correo, # Otro paciente
+            nutricionista=self.nutricionista_1,
+            fecha_hora=hora_cruce,
+            duracion_minutos=45,
+            motivo="Cita que genera cruce",
+            estado=EstadoCita.PROGRAMADA
+        )
+        
+        # 2. Crear la cita programada futura que se intentará adelantar
+        fecha_futura = timezone.now() + timedelta(days=3)
+        cita_adelantar = Cita.objects.create(
+            paciente=self.paciente_1,
+            nutricionista=self.nutricionista_1,
+            fecha_hora=fecha_futura,
+            duracion_minutos=45,
+            motivo="Consulta de control futura",
+            estado=EstadoCita.PROGRAMADA
+        )
+        
+        # 3. Intentar adelantar la cita por POST
+        from django.urls import reverse
+        url = reverse("pacientes:consulta_iniciar", args=[self.paciente_1.pk])
+        response = self.client.post(url, {
+            "tipo": "control",
+            "cita_id": str(cita_adelantar.id),
+            "vincular_cita": "true"
+        }, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data["success"])
+        self.assertIn("solapa", data["error"])
+        
+        # 4. Verificar que la cita futura no cambió su estado ni su fecha
+        cita_persistida = Cita.objects.get(pk=cita_adelantar.pk)
+        self.assertEqual(cita_persistida.estado, EstadoCita.PROGRAMADA)
+        self.assertEqual(cita_persistida.fecha_hora, fecha_futura)
+
+    # --------------------------------------------------------------------------
     # UT-12-01: Envío de Correo Exitoso
     # --------------------------------------------------------------------------
     def test_ut_12_01_envio_correo_exitoso(self):

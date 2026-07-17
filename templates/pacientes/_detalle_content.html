@@ -1918,6 +1918,12 @@
                             </button>
                         </div>
                         <div class="p-6 space-y-4">
+                            <!-- Alerta de error -->
+                            <div id="nueva-consulta-error" class="hidden bg-red-50 border border-red-150 text-red-700 rounded-xl p-3 text-xs flex items-start gap-2">
+                                <i data-lucide="alert-circle" class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"></i>
+                                <span id="nueva-consulta-error-msg" class="font-semibold"></span>
+                            </div>
+
                             {% if proxima_cita %}
                             <div
                                 class="bg-teal-50 border border-teal-100 rounded-xl p-4 text-xs text-teal-850 space-y-2">
@@ -10081,6 +10087,8 @@
 
     // ─── CONSULTAS NUTRICIONALES JS ───
     function abrirModalNuevaConsulta() {
+        const errDiv = document.getElementById('nueva-consulta-error');
+        if (errDiv) errDiv.classList.add('hidden');
         document.getElementById('modal-nueva-consulta').classList.remove('hidden');
     }
 
@@ -10109,7 +10117,14 @@
                     cerrarModalNuevaConsulta();
                     window.location.href = `?consulta_id=${data.consulta_id}`;
                 } else {
-                    alert("Error al iniciar la consulta: " + (data.error || "Ocurrió un problema."));
+                    const errDiv = document.getElementById('nueva-consulta-error');
+                    const errMsg = document.getElementById('nueva-consulta-error-msg');
+                    if (errDiv && errMsg) {
+                        errMsg.textContent = data.error || "Ocurrió un problema.";
+                        errDiv.classList.remove('hidden');
+                    } else {
+                        alert("Error al iniciar la consulta: " + (data.error || "Ocurrió un problema."));
+                    }
                 }
             })
             .catch(err => {
