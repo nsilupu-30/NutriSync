@@ -55,6 +55,18 @@ class PerfilNutricionista(models.Model):
         blank=True,
         verbose_name="Número de colegiatura",
     )
+    dni = models.CharField(
+        max_length=8,
+        blank=True,
+        null=True,
+        verbose_name="DNI",
+    )
+    ruc = models.CharField(
+        max_length=11,
+        blank=True,
+        null=True,
+        verbose_name="RUC",
+    )
     direccion_consultorio = models.TextField(
         blank=True,
         verbose_name="Dirección del consultorio",
