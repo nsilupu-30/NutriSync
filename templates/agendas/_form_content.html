@@ -67,7 +67,13 @@
                         Paciente
                     </label>
                     <div class="px-3 py-2 rounded-lg text-sm bg-slate-50 border border-slate-200 text-slate-700 font-bold">
-                        {{ paciente_obj.nombre_completo|default:form.instance.paciente.nombre_completo }}
+                        {% if paciente_obj %}
+                            {{ paciente_obj.nombre_completo }}
+                        {% elif form.instance.paciente %}
+                            {{ form.instance.paciente.nombre_completo }}
+                        {% else %}
+                            —
+                        {% endif %}
                     </div>
                     <!-- Select original oculto para Django -->
                     <div class="hidden">

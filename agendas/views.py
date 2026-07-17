@@ -331,7 +331,10 @@ class CitaCreateView(LoginRequiredMixin, CitaFormFragmentMixin, CreateView):
         import json
         
         # Guardamos de qué paciente viene si está en GET
-        context["from_paciente_id"] = self.request.GET.get("paciente")
+        paciente_id = self.request.GET.get("paciente")
+        context["from_paciente_id"] = paciente_id
+        if paciente_id:
+            context["paciente_obj"] = Paciente.objects.filter(pk=paciente_id, nutricionista=self.request.user).first()
 
         # Filtramos citas de tipo Primera Consulta para los pacientes de este nutricionista
         qs_primera = Cita.objects.filter(
@@ -395,7 +398,10 @@ class CitaUpdateView(NutricionistaCitaMixin, CitaFormFragmentMixin, UpdateView):
         import json
         
         # Guardamos de qué paciente viene
-        context["from_paciente_id"] = self.request.GET.get("paciente") or (self.object.paciente_id if self.object else None)
+        paciente_id = self.request.GET.get("paciente") or (self.object.paciente_id if self.object else None)
+        context["from_paciente_id"] = paciente_id
+        if paciente_id:
+            context["paciente_obj"] = Paciente.objects.filter(pk=paciente_id, nutricionista=self.request.user).first()
 
         # Filtramos citas de tipo Primera Consulta para los pacientes de este nutricionista,
         # excluyendo la cita actual que estamos editando.
