@@ -131,10 +131,10 @@
                     class="flex items-center justify-center gap-2 border border-slate-300 text-slate-650 hover:bg-slate-50 font-bold rounded-xl py-2.5 px-4 text-xs transition-all duration-200">
                     <i data-lucide="pencil" class="w-4 h-4"></i> Editar paciente
                 </button>
-                <a href="{% url 'agendas:nueva' %}?paciente={{ paciente.pk }}"
+                <button type="button" onclick="openModalAgendarCita('{{ paciente.pk }}')"
                     class="flex items-center justify-center gap-2 border border-slate-300 text-slate-650 hover:bg-slate-50 font-bold rounded-xl py-2.5 px-4 text-xs transition-all duration-200">
                     <i data-lucide="calendar" class="w-4 h-4"></i> Agendar cita
-                </a>
+                </button>
                 <button onclick="alert('La generación de reportes PDF estará disponible próximamente en este módulo.')"
                     class="flex items-center justify-center gap-2 border border-slate-300 text-slate-650 hover:bg-slate-50 font-bold rounded-xl py-2.5 px-4 text-xs transition-all duration-200">
                     <i data-lucide="file-text" class="w-4 h-4"></i> Generar PDF
@@ -10133,6 +10133,89 @@
 
     function cerrarModalNuevaConsulta() {
         document.getElementById('modal-nueva-consulta').classList.add('hidden');
+    }
+
+    async function openModalAgendarCita(pacienteId) {
+        openModal('Agendar Cita');
+        try {
+            const url = `/agenda/citas/nueva/?paciente=${pacienteId}&fragment=1`;
+            const resp = await fetch(url);
+            const html = await resp.text();
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const formContent = doc.getElementById('cita-form-content');
+
+            if (formContent) {
+                setModalContent(formContent);
+                bindCitaFormSubmit(pacienteId);
+            } else {
+                _showError('Error al cargar el formulario de cita.');
+            }
+        } catch (err) {
+            console.error(err);
+            _showError('Error de conexión al cargar la cita.');
+        }
+    }
+
+    function bindCitaFormSubmit(pacienteId) {
+        const form = document.getElementById('cita-form');
+        if (!form) return;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (form.dataset.submitting === 'true') return;
+            form.dataset.submitting = 'true';
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            let originalHtml = '';
+            if (submitBtn) {
+                originalHtml = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></span> Guardando...`;
+            }
+
+            const formData = new FormData(form);
+            const actionUrl = form.getAttribute('action') || `/agenda/citas/nueva/?paciente=${pacienteId}&fragment=1`;
+
+            try {
+                const resp = await fetch(actionUrl, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const text = await resp.text();
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                const successMarker = doc.getElementById('cita-form-success');
+
+                if (successMarker) {
+                    closeModal();
+                    // Refrescar página para ver la nueva cita en el listado
+                    window.location.reload();
+                } else {
+                    const formContent = doc.getElementById('cita-form-content');
+                    if (formContent) {
+                        setModalContent(formContent);
+                        bindCitaFormSubmit(pacienteId);
+                    } else {
+                        _showError('Error al procesar el formulario.');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                _showError('Error de conexión al guardar la cita.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalHtml;
+                }
+                form.removeAttribute('data-submitting');
+            }
+        });
     }
 
     function iniciarNuevaConsultaSubmit(event) {
