@@ -1931,7 +1931,7 @@
                                     <i data-lucide="info" class="w-4 h-4 text-teal-650"></i>
                                     Cita programada encontrada
                                 </p>
-                                <p>Existe una cita programada para este paciente el día <strong>{{ proxima_cita.fecha_hora|date:"d/m/Y a las H:i" }}</strong> (Motivo: {{ proxima_cita.motivo|default:"General" }}).</p>
+                                <p>Existe una cita programada para este paciente el día <strong>{{ proxima_cita.fecha_hora|date:"d/m/Y" }} a las {{ proxima_cita.fecha_hora|date:"H:i" }}</strong> (Motivo: {{ proxima_cita.motivo|default:"General" }}).</p>
 
                                 <div class="flex items-center gap-2 mt-2">
                                     <input type="checkbox" id="vincular-cita-check" name="vincular_cita" value="true"
@@ -10172,8 +10172,9 @@
     // List of all forms to disable
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
-        // Check if this is a save/action form (ignore navigation, search, print, toggle sidebar)
-        if (form.id && (form.id.includes('search') || form.id.includes('filter'))) {
+        const formId = form.getAttribute('id') || '';
+        // Check if this is a save/action form (ignore navigation, search, print, toggle sidebar, new consultation)
+        if (formId && (formId.includes('search') || formId.includes('filter') || formId === 'form-nueva-consulta')) {
             return;
         }
 
