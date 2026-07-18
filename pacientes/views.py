@@ -834,10 +834,11 @@ def paciente_medicion_guardar(request, pk):
 
     paciente = get_object_or_404(Paciente, pk=pk, nutricionista=request.user)
     consulta = get_consulta_context(paciente, request)
-    if not consulta:
-        return JsonResponse({"success": False, "error": "No existe una consulta iniciada para este paciente."}, status=400)
-    if consulta.estado == "finalizada":
-        return JsonResponse({"success": False, "error": "No se puede editar una consulta que ya ha sido finalizada."}, status=400)
+    
+    # Solo asociamos la medición a la consulta si está en curso (no finalizada).
+    # De lo contrario, se guarda como medición suelta en el perfil del paciente.
+    is_consulta_editable = (consulta is not None and consulta.estado != "finalizada")
+    consulta_asociada = consulta if is_consulta_editable else None
 
     fecha_str = request.POST.get("fecha", "").strip()
     fecha_val = parse_date(fecha_str) if fecha_str else date.today()
@@ -858,10 +859,10 @@ def paciente_medicion_guardar(request, pk):
         defaults["peso_kg"] = to_decimal(peso_str) if peso_str else (paciente.peso or 70.0)
         defaults["talla_cm"] = to_decimal(talla_str) if talla_str else (paciente.talla or 170.0)
 
-    # Buscar o crear medida para la consulta y fecha dadas
+    # Buscar o crear medida para la consulta/perfil y fecha dadas
     medida, created = MedidaCorporal.objects.get_or_create(
         paciente=paciente, 
-        consulta=consulta,
+        consulta=consulta_asociada,
         fecha=fecha_val, 
         defaults=defaults
     )

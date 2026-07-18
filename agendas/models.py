@@ -190,7 +190,10 @@ class Cita(models.Model):
             if nutricionista:
                 inicio_nuevo = self.fecha_hora
                 fin_nuevo = self.fecha_fin
-                fecha_dia = self.fecha_hora.date()
+                if timezone.is_aware(self.fecha_hora):
+                    fecha_dia = timezone.localtime(self.fecha_hora).date()
+                else:
+                    fecha_dia = self.fecha_hora.date()
 
                 # Obtenemos todas las citas activas/bloqueos de este nutricionista en el mismo día
                 # Filtramos por nutricionista del paciente o nutricionista directo en Cita
