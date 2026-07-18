@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recursos del Paciente - {{ paciente.nombre_completo }}</title>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .dot { width:6px; height:6px; border-radius:9999px; background:#0d9488; flex-shrink:0; margin-top:5px; }
+        @media print {
+            body { background-color: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .avoid-break { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<!-- Toolbar -->
+<div class="max-w-4xl mx-auto mb-6 bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between no-print">
+    <a href="{% url 'pacientes:detalle' paciente.pk %}" class="text-xs font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Volver a la Ficha
+    </a>
+    <button onclick="window.print()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-colors">
+        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir / Guardar PDF
+    </button>
+</div>
+
+<div class="max-w-4xl mx-auto space-y-5">
+
+<!-- ENCABEZADO -->
+<div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm avoid-break">
+    <div class="flex justify-between items-start pb-5 border-b border-slate-100 mb-5">
+        <div>
+            <h1 class="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                <i data-lucide="heart" class="w-5 h-5 text-teal-600"></i> NutriSync
+            </h1>
+            <p class="text-xs text-slate-400 mt-0.5">Plataforma Inteligente de Nutrición y Salud</p>
+        </div>
+        <div class="text-right">
+            <h2 class="text-base font-extrabold text-slate-700">Recursos del Paciente</h2>
+            <p class="text-xs text-slate-500">Generado: {{ fecha_generacion }}</p>
+            <p class="text-xs text-slate-400">Nutricionista: {{ nutricionista }}</p>
+        </div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+        <div><span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Paciente</span><span class="font-bold text-slate-700">{{ paciente.nombre_completo }}</span></div>
+        <div><span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">DNI</span><span class="font-bold text-slate-700">{{ paciente.dni|default:"-" }}</span></div>
+        <div><span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Edad</span><span class="font-bold text-slate-700">{{ paciente.edad|default:"-" }} años</span></div>
+        <div><span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Objetivo</span><span class="font-bold text-slate-700">{{ objetivo|default:"No especificado" }}</span></div>
+        <div><span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Diagnóstico</span><span class="font-bold text-slate-700">{{ diagnostico|default:"No registrado" }}</span></div>
+        {% if peso %}<div><span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Peso / IMC</span><span class="font-bold text-slate-700">{{ peso }} kg / {{ imc }}</span></div>{% endif %}
+    </div>
+</div>
+
+<!-- PLAN ALIMENTARIO -->
+{% if plan %}
+<div class="bg-white p-7 rounded-2xl border border-slate-200 shadow-sm avoid-break">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+        <i data-lucide="utensils" class="w-5 h-5 text-teal-600"></i>
+        <h2 class="text-sm font-extrabold text-slate-700 uppercase tracking-wider">Plan Alimentario: {{ plan.nombre }}</h2>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div class="bg-teal-50 p-3 rounded-xl border border-teal-100 text-center">
+            <span class="block text-[10px] text-teal-600 font-semibold uppercase">Calorías</span>
+            <span class="block text-lg font-extrabold text-teal-700">{{ plan.calorias }}</span>
+            <span class="text-[9px] text-teal-500">kcal/día</span>
+        </div>
+        <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-center">
+            <span class="block text-[10px] text-blue-600 font-semibold uppercase">Proteínas</span>
+            <span class="block text-lg font-extrabold text-blue-700">{{ plan.proteinas|default:"-" }}g</span>
+        </div>
+        <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 text-center">
+            <span class="block text-[10px] text-amber-600 font-semibold uppercase">Carbohidratos</span>
+            <span class="block text-lg font-extrabold text-amber-700">{{ plan.carbohidratos|default:"-" }}g</span>
+        </div>
+        <div class="bg-rose-50 p-3 rounded-xl border border-rose-100 text-center">
+            <span class="block text-[10px] text-rose-600 font-semibold uppercase">Grasas</span>
+            <span class="block text-lg font-extrabold text-rose-700">{{ plan.grasas|default:"-" }}g</span>
+        </div>
+    </div>
+    {% if plan.descripcion %}<p class="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100 mb-4">{{ plan.descripcion }}</p>{% endif %}
+    {% if comidas %}
+    <div class="space-y-3">
+        {% for comida in comidas %}
+        <div class="border border-slate-100 rounded-xl p-3">
+            <span class="text-xs font-bold text-slate-700 block mb-1.5">{{ comida.nombre }}</span>
+            <div class="space-y-1">
+                {% for receta in comida.recetas %}
+                <div class="flex items-start gap-2 text-xs text-slate-600">
+                    <div class="dot"></div>
+                    <span>{{ receta.nombre }}{% if receta.porcion %} &mdash; <em class="text-slate-400">{{ receta.porcion }}</em>{% endif %}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- RECOMENDACIONES -->
+{% if recom_hidratacion or recom_actividad or recom_alimentos_recom or recom_alimentos_limitar or recom_generales %}
+<div class="bg-white p-7 rounded-2xl border border-slate-200 shadow-sm avoid-break">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+        <i data-lucide="clipboard-check" class="w-5 h-5 text-teal-600"></i>
+        <h2 class="text-sm font-extrabold text-slate-700 uppercase tracking-wider">Recomendaciones e Indicaciones Clínicas</h2>
+    </div>
+    <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% if recom_hidratacion and recom_hidratacion.descripcion %}
+            <div class="bg-white border border-slate-200 p-4 rounded-xl text-xs space-y-2">
+                <span class="font-bold text-slate-700 flex items-center gap-1"><i data-lucide="droplet" class="w-3.5 h-3.5 text-sky-500"></i> Hidratación</span>
+                <p class="font-semibold text-slate-800">Consumo diario: {{ recom_hidratacion.descripcion.consumo_diario|default:"-" }} L/día</p>
+                <p class="text-slate-500 italic">{{ recom_hidratacion.descripcion.observaciones|default:"" }}</p>
+            </div>
+            {% endif %}
+            {% if recom_actividad and recom_actividad.descripcion %}
+            <div class="bg-white border border-slate-200 p-4 rounded-xl text-xs space-y-1.5">
+                <span class="font-bold text-slate-700 flex items-center gap-1"><i data-lucide="dumbbell" class="w-3.5 h-3.5 text-violet-500"></i> Actividad Física</span>
+                <p class="text-slate-800 font-semibold">{{ recom_actividad.descripcion.tipo|default:"-" }}</p>
+                <div class="grid grid-cols-3 gap-2 text-[10px] text-slate-500">
+                    <div><span class="font-bold block">Frecuencia</span>{{ recom_actividad.descripcion.frecuencia|default:"-" }}</div>
+                    <div><span class="font-bold block">Duración</span>{{ recom_actividad.descripcion.duracion|default:"-" }}</div>
+                    <div><span class="font-bold block">Intensidad</span>{{ recom_actividad.descripcion.intensidad|default:"-" }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% if recom_alimentos_recom and recom_alimentos_recom.descripcion.items %}
+            <div class="bg-white border border-slate-200 p-4 rounded-xl text-xs space-y-2">
+                <span class="font-bold text-slate-700 flex items-center gap-1"><i data-lucide="leaf" class="w-3.5 h-3.5 text-emerald-500"></i> Alimentos Recomendados</span>
+                <div class="flex flex-wrap gap-1.5">
+                    {% for item in recom_alimentos_recom.descripcion.items %}
+                    <span class="px-2 py-0.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold rounded-lg uppercase">{{ item }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% if recom_alimentos_limitar and recom_alimentos_limitar.descripcion.items %}
+            <div class="bg-white border border-slate-200 p-4 rounded-xl text-xs space-y-2">
+                <span class="font-bold text-slate-700 flex items-center gap-1"><i data-lucide="shield-alert" class="w-3.5 h-3.5 text-rose-500"></i> Alimentos a Evitar/Limitar</span>
+                <div class="flex flex-wrap gap-1.5">
+                    {% for item in recom_alimentos_limitar.descripcion.items %}
+                    <span class="px-2 py-0.5 bg-rose-50 border border-rose-100 text-rose-700 text-[10px] font-bold rounded-lg uppercase">{{ item }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% if recom_generales and recom_generales.descripcion.items %}
+        <div class="bg-white border border-slate-200 p-4 rounded-xl text-xs space-y-2">
+            <span class="font-bold text-slate-700 flex items-center gap-1 mb-1"><i data-lucide="check-square" class="w-3.5 h-3.5 text-amber-500"></i> Indicaciones Generales</span>
+            <ul class="list-disc list-inside space-y-1 text-slate-600">
+                {% for item in recom_generales.descripcion.items %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- LISTA DE COMPRAS -->
+{% if lista_compras %}
+<div class="bg-white p-7 rounded-2xl border border-slate-200 shadow-sm avoid-break">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+        <i data-lucide="shopping-cart" class="w-5 h-5 text-amber-500"></i>
+        <h2 class="text-sm font-extrabold text-slate-700 uppercase tracking-wider">Lista de Compras Recomendada</h2>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {% for item in lista_compras %}
+        <div class="flex items-start gap-2 text-xs text-slate-700 bg-amber-50 p-2.5 rounded-lg border border-amber-100">
+            <i data-lucide="check-square" class="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5"></i>
+            <span><strong>{{ item.producto }}</strong><br><em class="text-slate-400">{{ item.cantidad }}</em></span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- EVOLUCION -->
+{% if medidas %}
+<div class="bg-white p-7 rounded-2xl border border-slate-200 shadow-sm avoid-break">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+        <i data-lucide="activity" class="w-5 h-5 text-emerald-500"></i>
+        <h2 class="text-sm font-extrabold text-slate-700 uppercase tracking-wider">Reportes de Evolución</h2>
+    </div>
+    <table class="w-full text-left text-xs border-collapse">
+        <thead>
+            <tr class="bg-emerald-50 text-emerald-700 font-bold">
+                <th class="py-2 px-3">Fecha</th>
+                <th class="py-2 px-3">Peso (kg)</th>
+                <th class="py-2 px-3">Talla (cm)</th>
+                <th class="py-2 px-3">IMC</th>
+                <th class="py-2 px-3">% Grasa Corp.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in medidas %}
+            <tr class="border-b border-slate-100 {% if forloop.last %}font-bold text-slate-800{% else %}text-slate-600{% endif %}">
+                <td class="py-2 px-3">{{ m.fecha|date:"d/m/Y" }}</td>
+                <td class="py-2 px-3">{{ m.peso_kg|default:"-" }}</td>
+                <td class="py-2 px-3">{{ m.talla_cm|default:"-" }}</td>
+                <td class="py-2 px-3">{{ m.imc|default:"-" }}</td>
+                <td class="py-2 px-3">{{ m.grasa_corporal_pct|default:"-" }}{% if m.grasa_corporal_pct %}%{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- PIE DE PAGINA -->
+<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm avoid-break">
+    {% if proxima_cita %}
+    <div class="mb-4 flex items-center gap-2 text-xs text-teal-700 bg-teal-50 p-3 rounded-lg border border-teal-100">
+        <i data-lucide="calendar-check" class="w-4 h-4"></i>
+        <span>Próxima cita: <strong>{{ proxima_cita.fecha }}</strong> a las {{ proxima_cita.hora }} &mdash; {{ proxima_cita.tipo }}</span>
+    </div>
+    {% endif %}
+    <div class="flex items-center justify-between text-[10px] text-slate-400 pt-3 border-t border-slate-100">
+        <span>NutriSync &mdash; Documento informativo para uso del paciente</span>
+        <span>Profesional responsable: {{ nutricionista }}</span>
+    </div>
+</div>
+
+</div>
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+</body>
+</html>

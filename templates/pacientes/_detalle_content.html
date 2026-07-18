@@ -135,10 +135,10 @@
                     class="flex items-center justify-center gap-2 border border-slate-300 text-slate-650 hover:bg-slate-50 font-bold rounded-xl py-2.5 px-4 text-xs transition-all duration-200">
                     <i data-lucide="calendar" class="w-4 h-4"></i> Agendar cita
                 </button>
-                <button onclick="alert('La generación de reportes PDF estará disponible próximamente en este módulo.')"
+                <a href="{% url 'pacientes:entregables_pdf' paciente.pk %}" target="_blank"
                     class="flex items-center justify-center gap-2 border border-slate-300 text-slate-650 hover:bg-slate-50 font-bold rounded-xl py-2.5 px-4 text-xs transition-all duration-200">
                     <i data-lucide="file-text" class="w-4 h-4"></i> Generar PDF
-                </button>
+                </a>
                 {% if not paciente.usuario %}
                 <button onclick="generarAccesoMovil('{{ paciente.pk }}')"
                     class="flex items-center justify-center gap-2 border border-blue-250 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl py-2.5 px-4 text-xs transition-all duration-200 shadow-sm hover:shadow-md">

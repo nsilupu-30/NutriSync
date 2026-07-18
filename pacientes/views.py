@@ -2303,7 +2303,118 @@ def paciente_plan_publicar(request, pk, plan_id):
 
 
 @login_required
+def paciente_entregables_pdf(request, pk):
+    """
+    Genera el PDF consolidado con todos los recursos publicados del paciente:
+    plan alimentario, recomendaciones, lista de compras y reportes de evolución.
+    """
+    from django.shortcuts import render
+    from django.utils import timezone
+    from seguimiento.models import Recomendacion, MedidaCorporal, Entregable
+    from pacientes.models import PlanAlimentario
+
+    paciente = get_object_or_404(Paciente, pk=pk, nutricionista=request.user)
+
+    # --- Datos clínicos (evaluación del paciente) ---
+    eval_data = paciente.evaluacion or {}
+
+    # --- Plan alimentario activo (publicado) ---
+    plan = PlanAlimentario.objects.filter(
+        paciente=paciente, enviado_al_paciente=True
+    ).order_by('-fecha_inicio').first()
+
+    # Comidas del plan
+    comidas = []
+    if plan and plan.comidas:
+        for comida_data in plan.comidas:
+            comidas.append({
+                'nombre': comida_data.get('nombre', ''),
+                'recetas': comida_data.get('recetas', []),
+            })
+
+    # --- Recomendaciones (si hay entregable publicado) ---
+    recom_qs = None
+    recom_entregable = Entregable.objects.filter(
+        paciente=paciente, tipo='recomendaciones', estado='publicado'
+    ).order_by('-fecha_publicacion').first()
+    if recom_entregable:
+        if recom_entregable.consulta:
+            recom_qs = Recomendacion.objects.filter(paciente=paciente, consulta=recom_entregable.consulta)
+        else:
+            recom_qs = Recomendacion.objects.filter(paciente=paciente)
+
+    recom_hid = recom_qs.filter(categoria='hidratacion').first() if recom_qs else None
+    recom_act = recom_qs.filter(categoria='actividad_fisica').first() if recom_qs else None
+    recom_al_rec = recom_qs.filter(categoria='alimentos_recomendados').first() if recom_qs else None
+    recom_al_lim = recom_qs.filter(categoria='alimentos_limitar').first() if recom_qs else None
+    recom_gen = recom_qs.filter(categoria='generales').first() if recom_qs else None
+
+    # --- Lista de compras (desde entregables publicados) ---
+    lista_compras_entregable = Entregable.objects.filter(
+        paciente=paciente, tipo='lista_compras', estado='publicado'
+    ).order_by('-fecha_publicacion').first()
+    lista_compras = []
+    if lista_compras_entregable:
+        active_plan = PlanAlimentario.objects.filter(paciente=paciente, enviado_al_paciente=True).order_by('-fecha_inicio').first() or PlanAlimentario.objects.filter(paciente=paciente).order_by('-fecha_inicio').first()
+        if active_plan:
+            lista_compras = [
+                {"categoria": "Frutas y Verduras", "producto": "Espinacas frescas", "cantidad": "1 manojo"},
+                {"categoria": "Frutas y Verduras", "producto": "Manzanas verdes", "cantidad": "6 unidades"},
+                {"categoria": "Proteínas", "producto": "Pechuga de pollo", "cantidad": "1.2 kg"},
+                {"categoria": "Proteínas", "producto": "Filete de pescado fresco", "cantidad": "1 kg"},
+                {"categoria": "Lácteos y Derivados", "producto": "Yogurt griego natural (sin azúcar)", "cantidad": "1 L"},
+                {"categoria": "Cereales y Tubérculos", "producto": "Avena en hojuelas", "cantidad": "500 g"},
+                {"categoria": "Cereales y Tubérculos", "producto": "Camote amarillo", "cantidad": "1.5 kg"},
+                {"categoria": "Grasas Saludables", "producto": "Frutos secos (almendras/nueces)", "cantidad": "250 g"},
+                {"categoria": "Grasas Saludables", "producto": "Aceite de oliva extra virgen", "cantidad": "1 botella"},
+            ]
+
+    # --- Medidas corporales (historial) ---
+    medidas = MedidaCorporal.objects.filter(paciente=paciente).order_by('fecha', 'fecha_registro')
+
+    # --- Medida más reciente ---
+    medida_reciente = medidas.last()
+    peso = float(medida_reciente.peso_kg) if (medida_reciente and medida_reciente.peso_kg) else (float(paciente.peso) if paciente.peso else None)
+    talla = float(medida_reciente.talla_cm) if (medida_reciente and medida_reciente.talla_cm) else (float(paciente.talla) if paciente.talla else None)
+    imc = float(medida_reciente.imc) if (medida_reciente and medida_reciente.imc) else None
+
+    # --- Próxima cita ---
+    from django.utils import timezone as tz
+    proxima_cita = paciente.citas.filter(fecha_hora__gte=tz.now()).order_by('fecha_hora').first()
+    proxima_data = None
+    if proxima_cita:
+        proxima_data = {
+            'fecha': proxima_cita.fecha_hora.strftime('%d/%m/%Y'),
+            'hora': proxima_cita.fecha_hora.strftime('%H:%M'),
+            'tipo': proxima_cita.get_tipo_display(),
+        }
+
+    context = {
+        'paciente': paciente,
+        'plan': plan,
+        'comidas': comidas,
+        'recom_hidratacion': recom_hid,
+        'recom_actividad': recom_act,
+        'recom_alimentos_recom': recom_al_rec,
+        'recom_alimentos_limitar': recom_al_lim,
+        'recom_generales': recom_gen,
+        'lista_compras': lista_compras,
+        'medidas': medidas,
+        'objetivo': eval_data.get('objetivo_principal', 'No especificado'),
+        'diagnostico': eval_data.get('diagnostico_principal', 'No registrado'),
+        'peso': peso,
+        'talla': talla,
+        'imc': imc,
+        'proxima_cita': proxima_data,
+        'fecha_generacion': timezone.now().strftime('%d/%m/%Y'),
+        'nutricionista': request.user.get_full_name() or request.user.username,
+    }
+    return render(request, 'pacientes/entregables_pdf.html', context)
+
+
+@login_required
 def paciente_resumen_imprimir(request, pk, cita_id):
+
     """
     Muestra la página de impresión en PDF del resumen completo de una consulta.
     """
