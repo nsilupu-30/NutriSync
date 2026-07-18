@@ -1217,6 +1217,110 @@
             btnPlanContinuar.addEventListener('click', validarPaso1YContinuar);
         }
         btnAtras.addEventListener('click', irAtras);
+
+        // --- Validación final antes del envío (Submit Validation) ---
+        const registerForm = document.getElementById('register-form');
+        if (registerForm) {
+            registerForm.addEventListener('submit', (e) => {
+                // Si por alguna razón el formulario se envía estando en el paso 1 (ej. presionando Enter en un input)
+                if (!paso1Fields.classList.contains('hidden')) {
+                    e.preventDefault();
+                    validarPaso1YContinuar();
+                    return;
+                }
+
+                const method = paymentMethodType.value;
+                let errorsStep2 = [];
+
+                if (method === 'tarjeta') {
+                    const number = cardNumberInput.value.replace(/\s+/g, '');
+                    const expiry = cardExpiryInput.value.replace(/\s+/g, '');
+                    const cvv = cardCvvInput.value.trim();
+
+                    if (!number || number.length < 13) {
+                        errorsStep2.push("Ingresa un número de tarjeta de crédito válido.");
+                    }
+                    if (!expiry || !expiry.includes('/')) {
+                        errorsStep2.push("Ingresa una fecha de vencimiento válida (MM/AA).");
+                    }
+                    if (!cvv || cvv.length < 3) {
+                        errorsStep2.push("Ingresa el código de seguridad (CVC) de la tarjeta.");
+                    }
+                } else if (method === 'yape') {
+                    const phone = yapePhoneInput.value.replace(/\s+/g, '');
+                    const otp = yapeOtpInput.value.trim();
+
+                    if (!phone || phone.length !== 9 || !phone.startsWith('9')) {
+                        errorsStep2.push("Ingresa un número de celular de Yape válido (9 dígitos y empezar con 9).");
+                    }
+                    if (!otp || otp.length !== 6) {
+                        errorsStep2.push("Ingresa el código de aprobación de Yape de 6 dígitos.");
+                    }
+                } else if (method === 'paypal') {
+                    const emailPaypal = paypalEmailInput.value.trim();
+                    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+                    if (!emailPaypal || !emailRegex.test(emailPaypal)) {
+                        errorsStep2.push("Ingresa un correo electrónico de PayPal válido.");
+                    }
+                }
+
+                if (errorsStep2.length > 0) {
+                    e.preventDefault(); // Detener el envío
+
+                    // Mostrar los errores al inicio del formulario
+                    let errorDiv = document.getElementById('django-errors-container') || document.querySelector('.mb-4.bg-red-50');
+                    if (!errorDiv) {
+                        errorDiv = document.createElement('div');
+                        errorDiv.id = 'django-errors-container';
+                        errorDiv.className = "mb-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl p-4 text-sm font-medium space-y-1 shadow-sm";
+                        registerForm.parentNode.insertBefore(errorDiv, registerForm);
+                    } else {
+                        errorDiv.classList.remove('hidden');
+                    }
+                    
+                    errorDiv.innerHTML = `
+                        <p class="font-semibold">Por favor, corrige los siguientes errores de pago:</p>
+                        <ul class="list-disc pl-5 space-y-0.5">
+                            ${errorsStep2.map(err => `<li>${err}</li>`).join('')}
+                        </ul>
+                    `;
+                    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+
+        // --- Restauración del Paso 2 tras recarga de página por errores del Backend ---
+        {% if errors %}
+            const hasPaymentErrors = {% if data.payment_method_type %}true{% else %}false{% endif %};
+            if (hasPaymentErrors) {
+                // Forzar visualización directa del paso 2
+                paso1Fields.classList.add('hidden');
+                planSelectionSidebar.classList.add('hidden');
+                leftColumnWrapper.classList.remove('lg:col-span-7');
+                leftColumnWrapper.classList.add('lg:col-span-8', 'lg:col-start-3');
+                paso2Fields.classList.remove('hidden');
+                
+                // Actualizar Step Indicator a paso 2
+                step1Indicator.className = "flex items-center gap-2 font-semibold text-slate-400 text-sm";
+                step1Indicator.querySelector('span').className = "w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs";
+                stepLine.className = "w-12 h-[2px] bg-teal-600";
+                step2Indicator.className = "flex items-center gap-2 font-semibold text-teal-600 text-sm";
+                step2Circle.className = "w-6 h-6 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold text-xs";
+                
+                // Activar la pestaña correcta según el método enviado
+                const lastMethod = "{{ data.payment_method_type|default:'tarjeta' }}";
+                setTimeout(() => {
+                    if (lastMethod === 'yape') {
+                        if (tabYape) tabYape.click();
+                    } else if (lastMethod === 'paypal') {
+                        if (tabPaypal) tabPaypal.click();
+                    } else {
+                        if (tabTarjeta) tabTarjeta.click();
+                    }
+                }, 100);
+            }
+        {% endif %}
     </script>
 </body>
 </html>
