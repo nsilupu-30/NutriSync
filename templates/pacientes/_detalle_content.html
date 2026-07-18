@@ -9203,11 +9203,21 @@
         return base + "bg-slate-100 text-slate-600";
     }
 
+    function getRecomendacionModalElement(categoria) {
+        let targetId = `modal-rec-${categoria.replace('_', '-')}`;
+        if (categoria === "actividad_fisica") {
+            targetId = "modal-rec-actividad";
+        } else if (categoria === "alimentos_recomendados") {
+            targetId = "modal-rec-alimentos-recom";
+        }
+        return document.getElementById(targetId);
+    }
+
     function openRecomendacionModal(categoria) {
         if (!recomendacionesData) return;
 
         const r = recomendacionesData[categoria];
-        const modal = document.getElementById(`modal-rec-${categoria.replace('_', '-')}`);
+        const modal = getRecomendacionModalElement(categoria);
         if (!modal) return;
 
         // 1. Establecer cita_id y fecha actuales en los formularios
@@ -9252,7 +9262,7 @@
     }
 
     function closeRecomendacionModal(categoria) {
-        const modal = document.getElementById(`modal-rec-${categoria.replace('_', '-')}`);
+        const modal = getRecomendacionModalElement(categoria);
         if (modal) modal.classList.add("hidden");
     }
 
